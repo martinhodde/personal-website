@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Homelab · Martin Hodde</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/style.css?v=4">
+  <script src="/js/nav.js" defer></script>
+</head>
+<body>
+
+  <main class="container">
+    <div class="page-header">
+      <h1>homelab</h1>
+      <p>A Docker-based home server running media automation, game servers, smart home, networking, and monitoring services. This website is served from it.</p>
+    </div>
+
+    <!-- Architecture -->
+    <section style="padding: 1.5rem 0;">
+      <h2>architecture</h2>
+      <p style="margin-bottom: 1rem; font-size: 0.9rem;">
+        Everything runs on an Intel i9-13900H box with 96 GB of RAM, an NVMe boot drive,
+        a secondary NVMe for backups and miscellaneous hot storage, and an 80 TB RAID5 array across
+        four drives in a DAS enclosure. About 50 containers are split across 5 Docker Compose stacks and
+        8 subnets. The main stack handles media, monitoring, and home automation, while
+        Authentik, Headscale, Nextcloud, and Nginx each get their own isolated stack.
+      </p>
+      <p style="margin-bottom: 1rem; font-size: 0.9rem;">
+        Nginx sits at the edge, connected to every application network, terminating TLS with
+        wildcard Let&rsquo;s Encrypt certificates for two domains via Cloudflare DNS challenges.
+        Internal services are locked behind Tailscale (coordinated by a self-hosted Headscale
+        instance) while Plex, Overseerr, the Authentik outpost, and the info and game server pages are
+        the only public-facing endpoints. All torrent and indxer traffic routes through a Gluetun container
+        running a WireGuard tunnel to ProtonVPN.
+      </p>
+      <img src="/homelab/architecture.png" alt="Homelab Architecture Diagram"
+           id="arch-diagram"
+           style="width: 100%; max-width: 960px; display: block; margin: 1.5rem auto 0; border-radius: 8px; cursor: zoom-in;"/>
+
+      <div id="arch-lightbox" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:1000; cursor:zoom-out; padding:1rem; box-sizing:border-box; align-items:center; justify-content:center;">
+        <img src="/homelab/architecture.png" alt="Homelab Architecture Diagram"
+             style="display:block; max-width:100%; max-height:90vh; object-fit:contain; border-radius:8px; box-shadow:0 0 40px rgba(0,0,0,0.6);"/>
+      </div>
+
+      <script>
+        (function () {
+          var thumb = document.getElementById('arch-diagram');
+          var box   = document.getElementById('arch-lightbox');
+          thumb.addEventListener('click', function () { box.style.display = 'flex'; });
+          box.addEventListener('click',   function () { box.style.display = 'none'; });
+          document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') box.style.display = 'none';
+          });
+        })();
+      </script>
+    </section>
+
+    <!-- Automation -->
+    <section style="padding: 1.5rem 0;">
+      <h2>automation</h2>
+      <p style="margin-bottom: 1rem; font-size: 0.9rem;">
+        The stack is orchestrated by a systemd service that boots containers in 4 phases:
+        core infrastructure first, then isolated network stacks, followed by nginx once all networks exist,
+        and finally a stabilization phase that pauses media syncs until the VPN is healthy and indexers are reset.
+      </p>
+      <p style="margin-bottom: 1rem; font-size: 0.9rem;">
+        A fleet of cron jobs handles the fragile parts: monitoring VPN health every few minutes and
+        restarting dependent containers when it drops, clearing stalled downloads, resetting indexer
+        backoff after rate limiting cascades, syncing media requests, falling back from 4K to 1080p when
+        releases aren't available, searching for missing content periodically, and keeping Sonarr and
+        Radarr quality profiles and custom formats in sync with community guides via Recyclarr.
+      </p>
+      <p style="font-size: 0.9rem;">
+        Container updates happen via Watchtower nightly, except for VPN-dependent containers
+        which update through a dedicated script that handles the restart choreography without
+        killing the network for everything else. Autoheal runs alongside it, automatically restarting
+        any container that fails its health check. Duplicati backs up configs and key data to the
+        secondary NVMe on a nightly schedule.
+      </p>
+    </section>
+    
+    <!-- Public Services -->
+    <section style="padding: 1.5rem 0;">
+      <h2>public services</h2>
+      <div class="dir-grid">
+        <a href="https://info.monkeyhub.net" class="dir-entry" target="_blank" rel="noopener">
+          <span class="dir-name">info.monkeyhub.net</span>
+          <span class="dir-desc">Overview of the media ecosystem: what's available and how to access</span>
+        </a>
+        <a href="https://play.monkeyhub.net" class="dir-entry" target="_blank" rel="noopener">
+          <span class="dir-name">play.monkeyhub.net</span>
+          <span class="dir-desc">Game server dashboard: live player counts, versions, and status with passwords gated behind auth</span>
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      <span>martinhodde.com</span>
+      <span class="footer-sep">───── ✦ ─────</span>
+      <span>// hosted from the closet</span>
+    </div>
+  </footer>
+</body>
+</html>
