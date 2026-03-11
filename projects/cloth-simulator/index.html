@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cloth Simulator · Martin Hodde</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/style.css?v=4">
+  <link rel="stylesheet" href="/css/project.css?v=4">
+  <script>
+    MathJax = {
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script type="text/javascript" id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js">
+  </script>
+  <script src="/js/nav.js" defer></script>
+</head>
+<body>
+
+  <div class="project-content">
+    <a href="/projects/" class="back-link">back to projects</a>
+    <h1>Cloth Simulator</h1>
+
+    <div class="img-row single">
+      <figure>
+        <img src="images/bump_cloth.png" alt="Cloth Simulator"/>
+      </figure>
+    </div>
+
+    <h2>Overview</h2>
+    <p>
+      In this project, we model a cloth material as a system of discrete masses and springs, simulating its physical evolution within several environments in real time via numerical integration. We implement collisions between the cloth and rigid external objects as well as internal collisions among components of the cloth itself. Finally, we create a variety of shader programs to give the cloth an upgraded appearance, complete with personalized shading and textures.
+    </p>
+
+    <h2>Masses and Springs</h2>
+    <p>
+      To simulate our cloth, we construct a grid of point masses and connect them with three different types of springs. Structural springs connect adjacent point masses horizontally and vertically while shearing springs link point masses diagonally across the structural springs. Bending springs attach every two point masses both in the horizontal and vertical direction, leaving a gap to allow more flexibility.
+    </p>
+    <div class="img-row three">
+      <figure>
+        <img src="images/part1-1.png" alt="No Shearing"/>
+        <figcaption>No Shearing</figcaption>
+      </figure>
+      <figure>
+        <img src="images/part1-2.png" alt="Only Shearing"/>
+        <figcaption>Only Shearing</figcaption>
+      </figure>
+      <figure>
+        <img src="images/part1-3.png" alt="All Constraints"/>
+        <figcaption>All Constraints</figcaption>
+      </figure>
+    </div>
+
+    <h2>Numerical Integration</h2>
+    <p>
+      Setting the cloth in motion entails computing all external and spring correction forces on the point masses. We apply Verlet integration to update positions at each time step, with a constraint that each spring can stretch by at most 10% of its resting length.
+    </p>
+    <div class="img-row single">
+      <figure>
+        <img src="images/verlet.png" alt="Verlet Equation"/>
+        <figcaption>Verlet Integration</figcaption>
+      </figure>
+    </div>
+    <div class="img-row single">
+      <figure>
+        <img src="images/part2-1.gif" alt="Wireframe Falling"/>
+        <figcaption>Wireframe Falling</figcaption>
+      </figure>
+    </div>
+    <p>
+      As we increase the spring constant, the cloth becomes more rigid and less bouncy. A low spring constant makes it ripple on its way down with finer creases, while a high constant makes it behave like a swinging sheet of paper.
+    </p>
+    <div class="img-row two">
+      <figure>
+        <img src="images/part2-2.gif" alt="Low spring constant"/>
+        <figcaption>$k_s = 5 \; N/m$</figcaption>
+      </figure>
+      <figure>
+        <img src="images/part2-3.gif" alt="High spring constant"/>
+        <figcaption>$k_s = 50{,}000 \; N/m$</figcaption>
+      </figure>
+    </div>
+    <p>
+      A dense cloth stretches longer distances due to greater gravitational pull, while a light cloth hardly expands. Aggressive damping slows the fall but reaches rest sooner, while low damping causes prolonged bouncing.
+    </p>
+    <div class="img-row two">
+      <figure>
+        <img src="images/part2-4.gif" alt="Low density"/>
+        <figcaption>$\rho = 3 \; g/cm^2$</figcaption>
+      </figure>
+      <figure>
+        <img src="images/part2-5.gif" alt="High density"/>
+        <figcaption>$\rho = 150 \; g/cm^2$</figcaption>
+      </figure>
+    </div>
+
+    <h2>Collisions with Other Objects</h2>
+    <p>
+      We constrain point mass position updates to account for collisions with external objects. For every point mass at each time step, we check if it has passed through the surface of a sphere or plane and nudge it back above the surface. Increasing spring stiffness makes the cloth drape differently over the sphere.
+    </p>
+    <div class="img-row three">
+      <figure>
+        <img src="images/part3-1.gif" alt="Low ks sphere"/>
+        <figcaption>$k_s = 500 \; N/m$</figcaption>
+      </figure>
+      <figure>
+        <img src="images/part3-2.gif" alt="Med ks sphere"/>
+        <figcaption>$k_s = 5{,}000 \; N/m$</figcaption>
+      </figure>
+      <figure>
+        <img src="images/part3-3.gif" alt="High ks sphere"/>
+        <figcaption>$k_s = 50{,}000 \; N/m$</figcaption>
+      </figure>
+    </div>
+    <div class="img-row single">
+      <figure>
+        <img src="images/part3-4.gif" alt="Plane Collision"/>
+        <figcaption>Plane Collision</figcaption>
+      </figure>
+    </div>
+
+    <h2>Self-Collisions</h2>
+    <p>
+      We update the model to allow the cloth to collide with itself, producing folding effects without clipping artifacts. A 3D spatial hash map partitions point masses into spatial buckets, making nearby lookups constant-time. Low density yields coarse folds; high density produces many small wrinkles. Varying the spring constant induces inverse behavior relative to adjusting density.
+    </p>
+    <div class="img-row single">
+      <figure>
+        <img src="images/part4-1.gif" alt="Self-Collision"/>
+        <figcaption>Self-Collision</figcaption>
+      </figure>
+    </div>
+    <div class="img-row three">
+      <figure>
+        <img src="images/part4-2.gif" alt="Low density self"/>
+        <figcaption>$\rho = 3 \; g/cm^2$</figcaption>
+      </figure>
+      <figure>
+        <img src="images/part4-3.gif" alt="Med density self"/>
+        <figcaption>$\rho = 25 \; g/cm^2$</figcaption>
+      </figure>
+      <figure>
+        <img src="images/part4-4.gif" alt="High density self"/>
+        <figcaption>$\rho = 72 \; g/cm^2$</figcaption>
+      </figure>
+    </div>
+
+    <h2>Shaders</h2>
+    <p>
+      We write GLSL vertex and fragment shaders for the cloth and other objects. The vertex shader processes individual vertices, mapping them from world to model space. The fragment shader calculates output color according to the programmed lighting effect.
+    </p>
+    <p>
+      The Blinn-Phong shading model combines ambient, diffuse, and specular components:
+    </p>
+    <div class="img-row three">
+      <figure>
+        <img src="images/part5-1.gif" alt="Ambient"/>
+        <figcaption>Ambient</figcaption>
+      </figure>
+      <figure>
+        <img src="images/part5-2.gif" alt="Diffuse"/>
+        <figcaption>Diffuse</figcaption>
+      </figure>
+      <figure>
+        <img src="images/part5-3.gif" alt="Specular"/>
+        <figcaption>Specular</figcaption>
+      </figure>
+    </div>
+    <div class="img-row single">
+      <figure>
+        <img src="images/part5-4.gif" alt="Blinn-Phong"/>
+        <figcaption>Blinn-Phong Combined</figcaption>
+      </figure>
+    </div>
+    <p>
+      Texture mapping with Kandinsky's Composition VII, bump mapping and displacement mapping with a leaf texture, and environment-mapped reflections of a bridge crossing the Vindel River:
+    </p>
+    <div class="img-row three match-height">
+      <figure>
+        <img src="images/texture_1.png" alt="Composition VII"/>
+        <figcaption>Composition VII</figcaption>
+      </figure>
+      <figure>
+        <img src="images/part5-5.gif" alt="Texture Mapping"/>
+        <figcaption>Texture Mapping</figcaption>
+      </figure>
+    </div>
+    <div class="img-row three match-height">
+      <figure>
+        <img src="images/texture_2.png" alt="Leaves"/>
+        <figcaption>Leaves</figcaption>
+      </figure>
+      <figure>
+        <img src="images/part5-6.gif" alt="Bump Mapping"/>
+        <figcaption>Bump Mapping</figcaption>
+      </figure>
+      <figure>
+        <img src="images/part5-7.gif" alt="Displacement Mapping"/>
+        <figcaption>Displacement Mapping</figcaption>
+      </figure>
+    </div>
+    <div class="img-row single tall">
+      <figure>
+        <img src="images/part5-12.gif" alt="Environment-Mapped Reflection"/>
+        <figcaption>Environment-Mapped Reflection</figcaption>
+      </figure>
+    </div>
+
+  </div>
+
+  <footer>
+    <div class="container">
+      <span>martinhodde.com</span>
+      <span class="footer-sep">───── ✦ ─────</span>
+      <span>// hosted from the closet</span>
+    </div>
+  </footer>
+</body>
+</html>
