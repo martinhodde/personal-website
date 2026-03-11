@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Projects · Martin Hodde</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/style.css?v=4">
+  <script src="/js/nav.js" defer></script>
+</head>
+<body>
+
+  <main class="container">
+    <div class="page-header">
+      <h1>projects</h1>
+      <p>Projects in computer graphics and computer vision. Each links to a full writeup with results.</p>
+    </div>
+
+    <section>
+      <div class="project-grid">
+
+        <a href="/projects/path-tracer/" class="project-card" id="cs184-pathtracer">
+          <div class="project-title">Path Tracer</div>
+          <div class="project-desc">
+            Physically-based path tracer with BVH acceleration, direct and global illumination
+            via Monte Carlo integration, Russian Roulette termination, and support for mirror,
+            glass, and microfacet materials with importance-sampled BRDFs.
+          </div>
+          <div class="project-tags">
+            <span class="tag">C++</span>
+            <span class="tag green">rendering</span>
+            <span class="tag orange">global illumination</span>
+          </div>
+        </a>
+
+        <a href="/projects/neural-style-transfer/" class="project-card" id="cs194-nst">
+          <div class="project-title">Neural Style Transfer</div>
+          <div class="project-desc">
+            Renders the content of one image in the artistic style of another using a modified
+            VGG-19 network. Fuses content and style representations by minimizing combined
+            Gram matrix style loss and feature activation content loss.
+          </div>
+          <div class="project-tags">
+            <span class="tag">Python</span>
+            <span class="tag green">deep learning</span>
+            <span class="tag orange">optimization</span>
+          </div>
+        </a>
+
+        <a href="/projects/cloth-simulator/" class="project-card" id="cs184-clothsim">
+          <div class="project-title">Cloth Simulator</div>
+          <div class="project-desc">
+            Real-time cloth simulation using mass-spring systems with Verlet integration.
+            Sphere, plane, and self-collision handling with spatial hashing. GLSL shaders
+            including Blinn-Phong, texture/bump/displacement mapping, and environment reflections.
+          </div>
+          <div class="project-tags">
+            <span class="tag">C++</span>
+            <span class="tag green">simulation</span>
+            <span class="tag orange">shaders</span>
+          </div>
+        </a>
+
+        <a href="/projects/auto-stitching/" class="project-card" id="cs194-proj4">
+          <div class="project-title">Auto-Stitching Photo Mosaics</div>
+          <div class="project-desc">
+            Panorama stitching from manual and automatic correspondence. Homography estimation,
+            Laplacian blending, Harris corner detection, ANMS feature selection, descriptor
+            matching, and RANSAC for robust autostitching.
+          </div>
+          <div class="project-tags">
+            <span class="tag">Python</span>
+            <span class="tag green">computer vision</span>
+            <span class="tag orange">panorama stitching</span>
+          </div>
+        </a>
+
+        <a href="/projects/mesh-editor/" class="project-card" id="cs184-meshedit">
+          <div class="project-title">Mesh Editor</div>
+          <div class="project-desc">
+            Bezier curve/surface evaluation via de Casteljau, triangle mesh manipulation with the
+            half-edge data structure. Implemented edge flip, edge split, and Loop subdivision
+            for progressive mesh upsampling.
+          </div>
+          <div class="project-tags">
+            <span class="tag">C++</span>
+            <span class="tag green">geometry</span>
+            <span class="tag orange">subdivision</span>
+          </div>
+        </a>
+
+        <a href="/projects/colorizing-prokudin-gorskii/" class="project-card" id="cs194-proj1">
+          <div class="project-title">Colorizing the Prokudin-Gorskii Collection</div>
+          <div class="project-desc">
+            Reconstructed color images from 1900s glass plate negatives by aligning RGB channels
+            using normalized cross-correlation with image pyramids. Includes white balancing,
+            contrast enhancement, and edge-based alignment.
+          </div>
+          <div class="project-tags">
+            <span class="tag">Python</span>
+            <span class="tag green">image processing</span>
+            <span class="tag orange">image alignment</span>
+          </div>
+        </a>
+
+        <a href="/projects/face-morphing/" class="project-card" id="cs194-proj3">
+          <div class="project-title">Face Morphing</div>
+          <div class="project-desc">
+            Animated face morphs using Delaunay triangulation and affine warping. Computed
+            average faces from the IMM Danish Face Dataset, then generated caricatures by
+            extrapolating differences from the population mean.
+          </div>
+          <div class="project-tags">
+            <span class="tag">Python</span>
+            <span class="tag green">computer vision</span>
+            <span class="tag orange">image warping</span>
+          </div>
+        </a>
+
+        <a href="/projects/facial-keypoint-detection/" class="project-card" id="cs194-proj5">
+          <div class="project-title">Facial Keypoint Detection</div>
+          <div class="project-desc">
+            Predicts facial landmarks using progressively sophisticated CNN architectures:
+            simple CNNs on IMM data, ResNet-34 transfer learning on iBug (6666 images),
+            and U-Net pixelwise heatmap classification.
+          </div>
+          <div class="project-tags">
+            <span class="tag">Python</span>
+            <span class="tag green">deep learning</span>
+            <span class="tag orange">transfer learning</span>
+          </div>
+        </a>
+
+        <a href="/projects/lightfield-camera/" class="project-card" id="cs194-lightfield">
+          <div class="project-title">Lightfield Camera</div>
+          <div class="project-desc">
+            Simulated depth refocusing and aperture adjustment using Stanford Light Field Archive
+            data. Shifting and averaging multi-view images enables post-capture focus control.
+            Includes interactive click-to-refocus.
+          </div>
+          <div class="project-tags">
+            <span class="tag">Python</span>
+            <span class="tag green">computational photography</span>
+            <span class="tag orange">depth of field</span>
+          </div>
+        </a>
+
+        <a href="/projects/rasterizer/" class="project-card" id="cs184-rasterizer">
+          <div class="project-title">Rasterizer</div>
+          <div class="project-desc">
+            Software rasterizer with supersampled antialiasing (up to 16x), barycentric
+            coordinate interpolation, texture mapping with bilinear filtering, and mipmap
+            level sampling for efficient multi-resolution rendering.
+          </div>
+          <div class="project-tags">
+            <span class="tag">C++</span>
+            <span class="tag green">rendering</span>
+            <span class="tag orange">antialiasing</span>
+          </div>
+        </a>
+
+        <a href="/projects/filters-and-frequencies/" class="project-card" id="cs194-proj2">
+          <div class="project-title">Fun with Filters and Frequencies</div>
+          <div class="project-desc">
+            Image processing through frequency analysis. Edge detection, unsharp masking, hybrid
+            images (different at close vs. far viewing distances), and multiresolution blending
+            via Gaussian/Laplacian stacks.
+          </div>
+          <div class="project-tags">
+            <span class="tag">Python</span>
+            <span class="tag green">image processing</span>
+            <span class="tag orange">frequency domain</span>
+          </div>
+        </a>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <div class="container">
+      <span>martinhodde.com</span>
+      <span class="footer-sep">───── ✦ ─────</span>
+      <span>// hosted from the closet</span>
+    </div>
+  </footer>
+</body>
+</html>
