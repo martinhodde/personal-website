@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mesh Editor · Martin Hodde</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/style.css?v=4">
+  <link rel="stylesheet" href="/css/project.css?v=4">
+  <script>
+    MathJax = {
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script type="text/javascript" id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js">
+  </script>
+  <script src="/js/nav.js" defer></script>
+</head>
+<body>
+
+  <div class="project-content">
+    <a href="/projects/" class="back-link">back to projects</a>
+    <h1>Mesh Editor</h1>
+
+    <div class="img-row single">
+      <figure>
+        <img src="images/beast.png" alt="">
+      </figure>
+    </div>
+
+    <h2>Overview</h2>
+    <p>
+      In this project, we begin by exploring Bézier curves and surfaces, a method by which to achieve smooth, continuous structures using only a discrete set of control points. Acknowledging that rendering such shapes directly is often a prohibitively difficult task, we turn our attention to triangle meshes, the preferred method of modeling 3-dimensional geometry in computer graphics. In this part, we implement the flip and split operations of the cleverly constructed half-edge data structure, designed to efficiently traverse and manipulate triangle meshes. This framework lends itself nicely to the loop subdivision algorithm for mesh upsampling at the culmination of this project, which remedies the much of the visual accuracy we sacrificed earlier for the sake of efficiency.
+    </p>
+
+    <h2>Bezier Curves with 1D de Casteljau Subdivision</h2>
+    <p>
+      De Casteljau's algorithm is a recursive procedure that we employ to evaluate Bézier curves. It allows us to find a point on a Bézier curve defined by $n$ control points. To implement the algorithm, we begin by using linear interpolation (parameterized by $t$) between each pair of adjacent control points to calculate $n - 1$ points that lie between the original control points. We then interpolate again between these $n - 1$ new control points for the next level of recursion. We continue with this process until the we reach the base case in which there remains just a single control point, which therefore must lie on our Bézier curve.
+    </p>
+
+    <div class="img-row three">
+      <figure>
+        <img src="images/task1-1.png" alt="">
+        <figcaption>Step 1</figcaption>
+      </figure>
+      <figure>
+        <img src="images/task1-2.png" alt="">
+        <figcaption>Step 2</figcaption>
+      </figure>
+      <figure>
+        <img src="images/task1-3.png" alt="">
+        <figcaption>Step 3</figcaption>
+      </figure>
+    </div>
+    <div class="img-row three">
+      <figure>
+        <img src="images/task1-4.png" alt="">
+        <figcaption>Step 4</figcaption>
+      </figure>
+      <figure>
+        <img src="images/task1-5.png" alt="">
+        <figcaption>Step 5</figcaption>
+      </figure>
+      <figure>
+        <img src="images/task1-6.png" alt="">
+        <figcaption>Step 6</figcaption>
+      </figure>
+    </div>
+
+    <div class="img-row single">
+      <figure>
+        <img src="images/task1-7.png" alt="">
+        <figcaption>Increased $t$ value</figcaption>
+      </figure>
+    </div>
+
+    <h2>Bezier Surfaces with Separable 1D de Casteljau</h2>
+    <p>
+      We extend the de Casteljau algorithm to Bézier surfaces by applying the same process we performed on Bézier curves, but across 2 dimensions. In this analogous scheme, we begin with an $n \times n$ grid of control points and two variables, $u$ and $v$, representing the parameterization of the rows and columns of the grid, respectively. For each row, we apply the de Casteljau algorithm to the 1D Bézier curve created by its $n$ control points using the parameter $u$. After processing all rows, we are left with $n$ control points that form another 1D Bézier curve across a different dimension. Hence, we apply the de Casteljau algorithm once again, this time using the parameter $v$, and calculate the final point lying on the Bézier surface.
+    </p>
+
+    <div class="img-row single">
+      <figure>
+        <img src="images/task2.png" alt="">
+        <figcaption>Teapot Bézier Surface</figcaption>
+      </figure>
+    </div>
+
+    <h2>Area-Weighted Vertex Normals</h2>
+    <p>
+      Although technically the normal vector at a vertex within the triangle mesh is undefined, we can approximate it through the following procedure in order to achieve smooth Phong shading. For each vertex, we are able to efficiently iterate through all neighboring vertices using our nifty half-edge data structure. Hence, our algorithm begins with initializing a 3-dimensional zero-vector and then adding the cross product of each pair of adjacent edge vectors incident to the vertex. This yields the area-weighted sum of all normal vectors of the triangle faces to which the vertex is attached. Finally, we normalize this vector to have unit norm and obtain our desired result.
+    </p>
+
+    <div class="img-row two">
+      <figure>
+        <img src="images/task3-1.png" alt="">
+        <figcaption>Teapot without Vertex Normals</figcaption>
+      </figure>
+      <figure>
+        <img src="images/task3-2.png" alt="">
+        <figcaption>Teapot with Vertex Normals</figcaption>
+      </figure>
+    </div>
+
+    <h2>Edge Flip</h2>
+    <p>
+      Flipping the orientation of an edge in the triangle mesh is a seemingly simple maneuver, yet it requires surprisingly many operations due to the highly-interconnected nature of the data structure. Fortunately though, the algorithm takes constant time and does not depend on the size of the overall mesh. The first step is to collect all half-edges, vertices, and edges within the relevant 2-triangle system and assign them to carefully named local variables on the stack. Then, within each half-edge, vertex, and edge, we modify all pointers that are required to change as a result of the edge flip, assigning them to appropriate local variables as necessary. Note that we do not need to modify any pointers for the triangle faces, as our implementation performs a pseudo-rotation in the clockwise direction to preserve face relationships.
+    </p>
+    <p>
+      Luckily, we did not encounter many bugs when implementing edge flips, aside from an off-by-one error in the indexing of our local variable names for half-edges, which we were able to quickly spot and correct.
+    </p>
+
+    <div class="img-row two">
+      <figure>
+        <img src="images/task4-1.png" alt="">
+        <figcaption>Teapot (original)</figcaption>
+      </figure>
+      <figure>
+        <img src="images/task4-2.png" alt="">
+        <figcaption>Teapot with Edge Flips</figcaption>
+      </figure>
+    </div>
+
+    <h2>Edge Split</h2>
+    <p>
+      Contrary to an edge flip, an edge split requires the creation of several new mesh elements. For each split, we allocate an additional 6 half-edges, 3 edges, 2 faces, and a vertex. Moreover, as with the edge flip procedure, we must collect all relevant elements on the stack and adjust preexisting pointers as needed. We also carefully initalize all member variables of the newly created elements to ensure continuity in the mesh. Beyond assigning all the pointer variables to the appropriate neighboring mesh elements consistently with our labeling, we also set the position of the new vertex to be the midpoint of the edge that was split.
+    </p>
+    <p>
+      Once again, our careful labeling of mesh elements saved us from enduring too much debugging purgatory. However, when first testing our implementation, it seemed that triangle faces were being spontaneously deleted upon edge splits over certain axes. We fixed this by making sure to explicitly set the half-edge pointers for all faces, even the ones we assumed would remain unchanged after the split.
+    </p>
+
+    <div class="img-row three">
+      <figure>
+        <img src="images/task5-1.png" alt="">
+        <figcaption>Cow (original)</figcaption>
+      </figure>
+      <figure>
+        <img src="images/task5-2.png" alt="">
+        <figcaption>Cow with Edge Splits</figcaption>
+      </figure>
+      <figure>
+        <img src="images/task5-3.png" alt="">
+        <figcaption>Cow with Edge Splits and Flips</figcaption>
+      </figure>
+    </div>
+
+    <h2>Loop Subdivision for Mesh Upsampling</h2>
+    <p>
+      To perform loop subdivision, we begin by calculating new positions for each vertex, both old and new, based on the weighted average of the neighboring vertices according to the loop subdivision rule. Next, we split every single edge in the mesh using our subroutine developed in the previous part, ensuring that "new" and "old" edges in the mesh are marked as such with a boolean flag for future reference. At this point, we flip all edges in the mesh that connect an "old" vertex to a "new" vertex. Finally, we update the positions of all vertices to the new positions that we computed in the first step in the algorithm. Now, we have 4 times as many triangles as before, carefully positioned to appear balanced within the mesh.
+    </p>
+    <p>
+      The implementation bugs that we encountered came down to incorrectly marking edges and vertices as "old" and "new" at various steps in the algorithm, resulting in malformed subdivisions. The most time consuming oversight we had was labeling one of the two sub-edges along each split edge as "new" since it was technically newly allocated. This reasoning was flawed, however, as this new sub-edge is still a component of the original split edge within the spatial domain of the mesh. Hence, all we needed to do to fix this issue was uphold the illusion that such edges existed in the mesh all along.
+    </p>
+
+    <div class="img-row five">
+      <figure>
+        <img src="images/icos1.png" alt="">
+      </figure>
+      <figure>
+        <img src="images/icos2.png" alt="">
+      </figure>
+      <figure>
+        <img src="images/icos3.png" alt="">
+      </figure>
+      <figure>
+        <img src="images/icos4.png" alt="">
+      </figure>
+      <figure>
+        <img src="images/icos5.png" alt="">
+      </figure>
+    </div>
+
+    <div class="img-row five">
+      <figure>
+        <img src="images/torus1.png" alt="">
+      </figure>
+      <figure>
+        <img src="images/torus2.png" alt="">
+      </figure>
+      <figure>
+        <img src="images/torus3.png" alt="">
+      </figure>
+      <figure>
+        <img src="images/torus4.png" alt="">
+      </figure>
+      <figure>
+        <img src="images/torus5.png" alt="">
+      </figure>
+    </div>
+
+    <p>
+      As we perform loop subdivision, sharp edges and corners become more rounded and smooth. If we wish to avoid this, we can preprocess the corners and edges we want to maintain by splitting edges near them. In the case of corners, we can split the edges connected to the corner vertex that we want to preserve. For edges, we can preprocess our mesh by repeatedly splitting along the edge that we want to pronounce, then splitting the newly created edges.
+    </p>
+
+    <div class="img-row four">
+      <figure>
+        <img src="images/task6-1.png" alt="">
+        <figcaption>Rounded Edges and Corners</figcaption>
+      </figure>
+      <figure>
+        <img src="images/task6-2.png" alt="">
+        <figcaption>Sharper Edge</figcaption>
+      </figure>
+      <figure>
+        <img src="images/task6-3.png" alt="">
+        <figcaption>Sharper Corner</figcaption>
+      </figure>
+      <figure>
+        <img src="images/task6-4.png" alt="">
+        <figcaption>Sharper Edges and Corners</figcaption>
+      </figure>
+    </div>
+
+    <p>
+      Repeatedly applying loop subdivision on the cube causes it to grow increasingly asymmetrical due to the single diagonal edge running across each cube face. This means that the corner vertices have a different number of neighboring vertices, leading to warped weighted averages when calculating new vertex positions. To ameliorate this effect, we preprocess the cube by splitting each face's diagonal edge. This ensures that each corner has the same number of neighboring vertices so that the cube preserves symmetry as we subdivide it.
+    </p>
+
+    <div class="img-row five">
+      <figure>
+        <img src="images/cube1.png" alt="">
+      </figure>
+      <figure>
+        <img src="images/cube2.png" alt="">
+      </figure>
+      <figure>
+        <img src="images/cube3.png" alt="">
+      </figure>
+      <figure>
+        <img src="images/cube4.png" alt="">
+      </figure>
+      <figure>
+        <img src="images/cube5.png" alt="">
+      </figure>
+    </div>
+
+    <div class="img-row five">
+      <figure>
+        <img src="images/scube1.png" alt="">
+      </figure>
+      <figure>
+        <img src="images/scube2.png" alt="">
+      </figure>
+      <figure>
+        <img src="images/scube3.png" alt="">
+      </figure>
+      <figure>
+        <img src="images/scube4.png" alt="">
+      </figure>
+      <figure>
+        <img src="images/scube5.png" alt="">
+      </figure>
+    </div>
+
+  </div>
+
+  <footer>
+    <div class="container">
+      <span>martinhodde.com</span>
+      <span class="footer-sep">───── ✦ ─────</span>
+      <span>// hosted from the closet</span>
+    </div>
+  </footer>
+</body>
+</html>
