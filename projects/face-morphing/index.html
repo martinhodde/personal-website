@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Face Morphing · Martin Hodde</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/style.css?v=4">
+  <link rel="stylesheet" href="/css/project.css?v=4">
+  <script>
+    MathJax = {
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script type="text/javascript" id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js">
+  </script>
+  <script src="/js/nav.js" defer></script>
+</head>
+<body>
+
+  <div class="project-content">
+    <a href="/projects/" class="back-link">back to projects</a>
+    <h1>Face Morphing</h1>
+
+    <div class="img-row single">
+      <figure>
+        <img src="out/martin_joker_midway.jpg" alt="">
+      </figure>
+    </div>
+
+    <h2>Overview</h2>
+    <p>
+      The objectives of this project are to construct an animated morph between two faces, compute the average face of a population,
+      and extrapolate from a population mean to produce a caricature. We begin with morphing, which is achieved by simultaneously
+      warping the geometry of an image with respect to another image and cross-dissolving the colors between them.
+    </p>
+
+    <h2>Defining Correspondences</h2>
+    <p>
+      In order to morph convincingly, we must explicitly define correspondences between key points in the two input images. As one
+      would expect, components of the eyes, nose, ears, and mouth are linked to each other across the images. Once these coordinate
+      mappings are established, we execute the Delaunay triangulation algorithm on the average of the two gathered sets of
+      coordinates to extract relatively balanced meshes of triangles. The results of this procedure are illustrated below.
+    </p>
+
+    <div class="img-row three">
+      <figure>
+        <img src="data/martin.jpg" alt="Martin">
+        <figcaption>Martin</figcaption>
+      </figure>
+      <figure>
+        <img src="data/joker.jpg" alt="Joker">
+        <figcaption>Joker</figcaption>
+      </figure>
+    </div>
+    <div class="img-row three">
+      <figure>
+        <img src="out/martin_points.jpg" alt="Key Points (Martin)">
+        <figcaption>Key Points (Martin)</figcaption>
+      </figure>
+      <figure>
+        <img src="out/joker_points.jpg" alt="Key Points (Joker)">
+        <figcaption>Key Points (Joker)</figcaption>
+      </figure>
+    </div>
+
+    <h2>Computing the "Mid-Way Face"</h2>
+    <p>
+      Prior to generating the entire morph sequence, we compute the mid-way face between the two input images as a sneak peek. Though
+      averaging the colors is straightforward, we need to know which pixels to draw color from in both images. For all triangles, we
+      define an affine transformation from the average shape to both the source and target shapes. With this, we find the
+      corresponding points in the input images for each pixel in the intermediate triangle and interpolate colors according to
+      the average.
+    </p>
+
+    <div class="img-row three">
+      <figure>
+        <img src="data/martin.jpg" alt="Martin">
+        <figcaption>Martin</figcaption>
+      </figure>
+      <figure>
+        <img src="out/martin_joker_midway.jpg" alt="Mid-Way (Martin/Joker)">
+        <figcaption>Mid-Way</figcaption>
+      </figure>
+      <figure>
+        <img src="data/joker.jpg" alt="Joker">
+        <figcaption>Joker</figcaption>
+      </figure>
+    </div>
+
+    <h2>The Morph Sequence</h2>
+    <p>
+      To produce a full morph sequence, we repeat the process described in the mid-way face section for the desired
+      number of frames, but instead of using a strict average, we compute a weighted average that is gradually adjusted from frame
+      to frame. The following animation contains 45 individually computed morph frames set to play at 30 frames per second.
+    </p>
+
+    <div class="img-row single tall">
+      <figure>
+        <img src="out/martin_joker_morph.gif" alt="Martin-Joker Morph">
+        <figcaption>Martin-Joker Morph</figcaption>
+      </figure>
+    </div>
+
+    <h2>The "Mean Face" of a Population</h2>
+    <p>
+      Determining the mean face of a population requires taking the average corresponding point locations across the dataset, warping
+      each sample in the dataset into this average shape, then averaging the colors. I opted to use the IMM dataset of Danish faces for
+      this task. Using the blending script from the previous project, I projected the picture of myself from the previous parts onto
+      the same background that appears in the images of the Danes so that they line up properly. Shown below is the average face of the
+      Danes, my face warped onto the average Danish geometry, and the average Danish face warped onto my geometry. Also displayed is a selected
+      sample of Danish subjects warped into the average shape.
+    </p>
+
+    <div class="img-row two">
+      <figure>
+        <img src="out/danes_mean_face.jpg" alt="Danes Mean Face">
+        <figcaption>Average Danish Face</figcaption>
+      </figure>
+      <figure>
+        <img src="data/martin2.jpg" alt="Martin">
+        <figcaption>Martin</figcaption>
+      </figure>
+    </div>
+    <div class="img-row two">
+      <figure>
+        <img src="out/martin2_danes_mean_face_warp_1.0.jpg" alt="Martin-Danes Warp">
+        <figcaption>Martin-Danes Warp</figcaption>
+      </figure>
+      <figure>
+        <img src="out/danes_mean_face_martin2_warp_1.0.jpg" alt="Danes-Martin Warp">
+        <figcaption>Danes-Martin Warp</figcaption>
+      </figure>
+    </div>
+
+    <h3 style="text-align: center">Samples Warped onto Average Danish Face</h3>
+
+    <div class="img-row three">
+      <figure>
+        <img src="out/face22.jpg" alt="Dane 1">
+      </figure>
+      <figure>
+        <img src="out/face28.jpg" alt="Dane 2">
+      </figure>
+      <figure>
+        <img src="out/face14.jpg" alt="Dane 3">
+      </figure>
+    </div>
+    <div class="img-row three">
+      <figure>
+        <img src="out/face23.jpg" alt="Dane 4">
+      </figure>
+      <figure>
+        <img src="out/face30.jpg" alt="Dane 5">
+      </figure>
+      <figure>
+        <img src="out/face35.jpg" alt="Dane 6">
+      </figure>
+    </div>
+
+    <h2>Caricatures: Extrapolating from the Mean</h2>
+    <p>
+      We extend the warps from the previous part and extrapolate from the population mean to create caricatures. This is done by
+      amplifying differences between the input images. The following images show various levels of extrapolation between my face
+      and the average Danish face.
+    </p>
+
+    <div class="img-row four">
+      <figure>
+        <img src="out/martin2_danes_mean_face_warp_-1.0.jpg" alt="Alpha = -1">
+        <figcaption>$\alpha = -1$</figcaption>
+      </figure>
+      <figure>
+        <img src="out/martin2_danes_mean_face_warp_-0.5.jpg" alt="Alpha = -1/2">
+        <figcaption>$\alpha = -0.5$</figcaption>
+      </figure>
+      <figure>
+        <img src="out/martin2_danes_mean_face_warp_1.5.jpg" alt="Alpha = 3/2">
+        <figcaption>$\alpha = 1.5$</figcaption>
+      </figure>
+      <figure>
+        <img src="out/martin2_danes_mean_face_warp_2.0.jpg" alt="Alpha = 2">
+        <figcaption>$\alpha = 2$</figcaption>
+      </figure>
+    </div>
+
+    <h2>Gender Change</h2>
+    <p>
+      For this part, I extract the mean face of the women in the Danes dataset to make myself look more feminine. In the images
+      below, I am morphed into the average shape of the Danish women, the average color of the Danish women, and then both
+      simultaneously.
+    </p>
+
+    <div class="img-row two">
+      <figure>
+        <img src="out/danes_women_mean_face.jpg" alt="Average Dane Woman">
+        <figcaption>Average Danish Female Face</figcaption>
+      </figure>
+      <figure>
+        <img src="data/martin2.jpg" alt="Martin">
+        <figcaption>Martin</figcaption>
+      </figure>
+    </div>
+    <div class="img-row three">
+      <figure>
+        <img src="out/martin2_danes_women_mean_face_shape_change.jpg" alt="Martin Fem Shape">
+        <figcaption>Martin with Feminine Shape</figcaption>
+      </figure>
+      <figure>
+        <img src="out/martin2_danes_women_mean_face_color_change.jpg" alt="Martin Fem Color">
+        <figcaption>Martin with Feminine Color</figcaption>
+      </figure>
+      <figure>
+        <img src="out/martin2_danes_women_mean_face_shape_color_change.jpg" alt="Martin Fem Features">
+        <figcaption>Martin with Feminine Shape and Color</figcaption>
+      </figure>
+    </div>
+
+  </div>
+
+  <footer>
+    <div class="container">
+      <span>martinhodde.com</span>
+      <span class="footer-sep">───── ✦ ─────</span>
+      <span>// hosted from the closet</span>
+    </div>
+  </footer>
+</body>
+</html>

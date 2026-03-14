@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Facial Keypoint Detection · Martin Hodde</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/style.css?v=4">
+  <link rel="stylesheet" href="/css/project.css?v=4">
+  <script>
+    MathJax = {
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script type="text/javascript" id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js">
+  </script>
+  <script src="/js/nav.js" defer></script>
+</head>
+<body>
+
+  <div class="project-content">
+    <a href="/projects/" class="back-link">back to projects</a>
+    <h1>Facial Keypoint Detection</h1>
+
+    <div class="img-row single">
+      <figure>
+        <img src="out/ibug_test_pred_583.jpg" alt="Facial Keypoint Prediction"/>
+      </figure>
+    </div>
+
+    <h2>Overview</h2>
+    <p>
+      The objective of this project is to predict facial keypoints on facial images using various convolutional
+      neural network (CNN) architectures.
+    </p>
+
+    <h2>Nose Tip Detection</h2>
+    <p>
+      The first task is to predict the coordinates of a person's nose tip in an image of their face.
+      We use the IMM dataset containing 240 facial images in various orientations, each with 58 annotated facial
+      keypoints. The first 192 images are used as training data and the remaining 48 images are held out as the
+      validation set. Below are some sample images from the dataset along with the nose tip labels.
+    </p>
+    <div class="img-row four">
+      <figure><img src="out/nose_sample_im0.jpg" alt="Nose sample"/></figure>
+      <figure><img src="out/nose_sample_im1.jpg" alt="Nose sample"/></figure>
+      <figure><img src="out/nose_sample_im2.jpg" alt="Nose sample"/></figure>
+      <figure><img src="out/nose_sample_im3.jpg" alt="Nose sample"/></figure>
+    </div>
+    <p>
+      I trained two simple CNNs, each with 3 convolutional layers followed by 2 linear layers. The first network used $3 \times 3$ kernels and
+      the other had $7 \times 7$ kernels. These models were trained for 20 epochs with a batch size of 16 using MSE loss.
+    </p>
+    <div class="img-row two">
+      <figure><img src="out/nose_tip_loss_3x3_0.001.jpg" alt="3x3 loss"/></figure>
+      <figure><img src="out/nose_tip_loss_3x3_1e-05.jpg" alt="3x3 loss"/></figure>
+    </div>
+    <div class="img-row two">
+      <figure><img src="out/nose_tip_loss_7x7_0.001.jpg" alt="7x7 loss"/></figure>
+      <figure><img src="out/nose_tip_loss_7x7_1e-05.jpg" alt="7x7 loss"/></figure>
+    </div>
+    <p>
+      The $3 \times 3$ kernel model converged more stably and with slightly lower validation loss.
+      It performed well on aligned faces but struggled with tilted heads. Two good and two bad predictions:
+    </p>
+    <div class="img-row four">
+      <figure><img src="out/36-5m_nose_pts.jpg" alt="Good nose pred"/></figure>
+      <figure><img src="out/39-1m_nose_pts.jpg" alt="Good nose pred"/></figure>
+      <figure><img src="out/35-4f_nose_pts.jpg" alt="Bad nose pred"/></figure>
+      <figure><img src="out/40-3m_nose_pts.jpg" alt="Bad nose pred"/></figure>
+    </div>
+
+    <h2>Full Facial Keypoint Detection</h2>
+    <p>
+      Next, we predict all 58 facial landmarks on the same IMM dataset. To enhance the limited data, we apply data augmentation
+      including random rotation, translation, cropping, scaling, and color jitter. Some augmented samples:
+    </p>
+    <div class="img-row four">
+      <figure><img src="out/imm_sample_im0.jpg" alt="Augmented sample"/></figure>
+      <figure><img src="out/imm_sample_im1.jpg" alt="Augmented sample"/></figure>
+      <figure><img src="out/imm_sample_im2.jpg" alt="Augmented sample"/></figure>
+      <figure><img src="out/imm_sample_im3.jpg" alt="Augmented sample"/></figure>
+    </div>
+    <p>
+      The model uses 5 convolutional layers and 3 linear layers, trained for 20 epochs with a learning rate of $10^{-4}$.
+    </p>
+    <div class="img-row single">
+      <figure>
+        <img src="out/facial_cnn_arch.jpg" alt="CNN Architecture"/>
+        <figcaption>Facial Keypoint CNN Architecture</figcaption>
+      </figure>
+    </div>
+    <div class="img-row single">
+      <figure><img src="out/facial_keypoint_loss.jpg" alt="Loss plot"/></figure>
+    </div>
+    <p>
+      Due to limited data and a relatively primitive architecture, the model did not generalize well. Predictions tended toward average
+      keypoint positions when the input was poorly aligned. Two decent and two poor predictions:
+    </p>
+    <div class="img-row four">
+      <figure><img src="out/38-1m_facial_keypts.jpg" alt="Facial pred"/></figure>
+      <figure><img src="out/36-5m_facial_keypts.jpg" alt="Facial pred"/></figure>
+      <figure><img src="out/35-3f_facial_keypts.jpg" alt="Facial pred"/></figure>
+      <figure><img src="out/37-4m_facial_keypts.jpg" alt="Facial pred"/></figure>
+    </div>
+    <p>
+      Visualizing the learned filters in the first convolutional layer:
+    </p>
+    <div class="img-row single">
+      <figure>
+        <img src="out/imm_filters.jpg" alt="Learned Filters"/>
+        <figcaption>Facial Keypoint CNN Filters (Layer 1)</figcaption>
+      </figure>
+    </div>
+
+    <h2>Transfer Learning with ResNet-34</h2>
+    <p>
+      We turn to the larger iBug dataset with 6666 images and 68 facial keypoints per image. After an 80-20 train-test split,
+      we feed the augmented data into a pretrained ResNet-34 with modified initial and final layers. Training runs for 15 epochs with
+      a batch size of 64 and learning rate of $10^{-4}$.
+    </p>
+    <div class="img-row wide">
+      <figure>
+        <img src="out/resnet_arch.jpg" alt="ResNet-34 Architecture"/>
+        <figcaption>Modified ResNet-34 Architecture</figcaption>
+      </figure>
+    </div>
+    <div class="img-row single">
+      <figure><img src="out/ibug_facial_keypoint_loss.jpg" alt="iBug loss"/></figure>
+    </div>
+    <p>
+      This transfer learning approach yielded significantly better results:
+    </p>
+    <div class="img-row four">
+      <figure><img src="out/ibug_test_pred_583.jpg" alt="iBug pred"/></figure>
+      <figure><img src="out/ibug_test_pred_479.jpg" alt="iBug pred"/></figure>
+      <figure><img src="out/ibug_test_pred_477.jpg" alt="iBug pred"/></figure>
+      <figure><img src="out/ibug_test_pred_990.jpg" alt="iBug pred"/></figure>
+    </div>
+    <p>
+      Testing on personal photos, the model handles standard faces well but struggles with unusual accessories:
+    </p>
+    <div class="img-row three">
+      <figure>
+        <img src="out/stav_resnet_pred.jpg" alt="Stavros prediction"/>
+        <figcaption>Stavros</figcaption>
+      </figure>
+      <figure>
+        <img src="out/nick_resnet_pred.jpg" alt="Nick prediction"/>
+        <figcaption>Nick</figcaption>
+      </figure>
+      <figure>
+        <img src="out/adam_resnet_pred.jpg" alt="Adam prediction"/>
+        <figcaption>Adam</figcaption>
+      </figure>
+    </div>
+
+    <h2>Pixelwise Classification with U-Net</h2>
+    <p>
+      We transform the regression problem into pixelwise classification, outputting how likely a given pixel is to be a keypoint.
+      We use a pretrained U-Net with a softmax layer, interpreting the output as a probability distribution. Target labels are
+      heatmaps with 2D Gaussians ($\sigma=3$, kernel size 15) centered at ground truth keypoint coordinates.
+    </p>
+    <div class="img-row wide">
+      <figure>
+        <img src="out/unet_arch.jpg" alt="U-Net Architecture"/>
+        <figcaption>Modified U-Net Architecture</figcaption>
+      </figure>
+    </div>
+    <div class="img-row four">
+      <figure><img src="out/heatmap_source_1133.jpg" alt="Source"/></figure>
+      <figure><img src="out/heatmap_source_320.jpg" alt="Source"/></figure>
+      <figure><img src="out/heatmap_source_595.jpg" alt="Source"/></figure>
+      <figure><img src="out/heatmap_source_825.jpg" alt="Source"/></figure>
+    </div>
+    <div class="img-row four">
+      <figure><img src="out/heatmap_1133.jpg" alt="Heatmap"/></figure>
+      <figure><img src="out/heatmap_320.jpg" alt="Heatmap"/></figure>
+      <figure><img src="out/heatmap_595.jpg" alt="Heatmap"/></figure>
+      <figure><img src="out/heatmap_825.jpg" alt="Heatmap"/></figure>
+    </div>
+    <div class="img-row single">
+      <figure><img src="out/heatmap_facial_keypoint_loss.jpg" alt="Heatmap loss"/></figure>
+    </div>
+    <p>
+      Although losses converge, the heatmap outputs are somewhat redundant — many of the 68 channels produce similar coordinates,
+      leading to clusters around certain keypoints while others are missing:
+    </p>
+    <div class="img-row four">
+      <figure><img src="out/heatmap_test_pred_559.jpg" alt="Heatmap pred"/></figure>
+      <figure><img src="out/heatmap_test_pred_306.jpg" alt="Heatmap pred"/></figure>
+      <figure><img src="out/heatmap_test_pred_610.jpg" alt="Heatmap pred"/></figure>
+      <figure><img src="out/heatmap_test_pred_912.jpg" alt="Heatmap pred"/></figure>
+    </div>
+
+  </div>
+
+  <footer>
+    <div class="container">
+      <span>martinhodde.com</span>
+      <span class="footer-sep">───── ✦ ─────</span>
+      <span>// hosted from the closet</span>
+    </div>
+  </footer>
+</body>
+</html>
