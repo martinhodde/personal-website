@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Neural Style Transfer · Martin Hodde</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/style.css?v=4">
+  <link rel="stylesheet" href="/css/project.css?v=4">
+  <script>
+    MathJax = {
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script type="text/javascript" id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js">
+  </script>
+  <script src="/js/nav.js" defer></script>
+</head>
+<body>
+
+  <div class="project-content">
+    <a href="/projects/" class="back-link">back to projects</a>
+    <h1>Neural Style Transfer</h1>
+
+    <div class="img-row single">
+      <figure>
+        <img src="out/neckarfront_5.jpg" alt="Starry Night Style Transfer"/>
+      </figure>
+    </div>
+
+    <h2>Overview</h2>
+    <p>
+      This project implements <a href="https://arxiv.org/pdf/1508.06576.pdf">A Neural Algorithm of Artistic Style</a>. The objective
+      is to render the content of one image in the artistic style of another image. We adjust a pretrained VGG-19 convolutional
+      neural network to serve as a collection of feature representations for a given input image. The higher convolutional layers of
+      the network correspond to the high-level object contents of the image, while the upstream layers represent low-level texture information.
+      This structural separation of image details in the network allows us to selectively fuse together distinct content and style aspects across
+      images.
+    </p>
+
+    <h2>Model Architecture</h2>
+    <p>
+      Using the VGG-19 model as a baseline, we add an image normalization layer to the front, pluck out the convolutional layers, replace all of the
+      max pooling layers with average pooling layers, insert content loss and style loss modules where appropriate, and exclude all of the linear layers.
+      To obtain feature representations, we simply extract the convolutional filter activations.
+    </p>
+    <div class="img-row single">
+      <figure>
+        <img src="model_images/model_arch.jpg" alt="Model Architecture"/>
+        <figcaption>VGG-19 Network Architecture</figcaption>
+      </figure>
+    </div>
+
+    <h2>Optimization</h2>
+    <p>
+      Let $\vec{p}$ and $\vec{x}$ be the original image and the generated image, respectively, and let $P^{\ell}$ and $F^{\ell}$ be their feature
+      representations for layer $\ell$. The content loss is defined as the mean squared error between the content image and the appropriate
+      feature activations. To compute the style loss, we use the Gram matrix $G^{\ell}$, where $G_{ij}^{\ell}$ is the inner product between the vectorized feature
+      map $i$ and $j$ in layer $\ell$, and minimize the mean squared distance between the Gram matrices of the original and generated images.
+    </p>
+    <p>
+      To generate output images, we initialize the output image to the content image and
+      simultaneously minimize the content and style loss for all relevant activation layers, using separate empirically determined weights
+      $\alpha$ and $\beta$ for each type of loss. We run the LBFGS optimizer for 250 iterations with an $\alpha / \beta$ ratio of $5 \times 10^{-4}$.
+    </p>
+
+    <h2>Results</h2>
+    <p>
+      Below are the results for three content images rendered in the style of seven paintings. The style images are shown once for reference; captions on each output identify the source style.
+    </p>
+
+    <div class="img-row four">
+      <figure><img src="data/style/shipwreck_of_the_minotaur.jpg" alt="The Shipwreck of the Minotaur"/><figcaption>The Shipwreck of the Minotaur</figcaption></figure>
+      <figure><img src="data/style/starry_night.jpg" alt="The Starry Night"/><figcaption>The Starry Night</figcaption></figure>
+      <figure><img src="data/style/scream.jpg" alt="Der Schrei"/><figcaption>Der Schrei</figcaption></figure>
+      <figure><img src="data/style/femme_nue_assise.jpg" alt="Femme Nue Assise"/><figcaption>Femme Nue Assise</figcaption></figure>
+    </div>
+    <div class="img-row four">
+      <figure><img src="data/style/composition.jpg" alt="Composition VII"/><figcaption>Composition VII</figcaption></figure>
+      <figure><img src="data/style/the_kiss.jpg" alt="Der Kuss"/><figcaption>Der Kuss</figcaption></figure>
+      <figure><img src="data/style/van_gogh.jpg" alt="Vincent van Gogh"/><figcaption>Vincent van Gogh</figcaption></figure>
+    </div>
+
+    <h3>Tubingen Neckarfront</h3>
+    <p>A riverside view of the old town of Tübingen, Germany — the original benchmark image from the Gatys et al. paper.</p>
+    <div class="img-row single">
+      <figure><img src="data/content/tuebingen_neckarfront.jpg" alt="Tubingen Neckarfront"/></figure>
+    </div>
+    <div class="img-row four">
+      <figure><img src="out/neckarfront_4.jpg" alt="Neckarfront styled"/><figcaption>The Shipwreck of the Minotaur</figcaption></figure>
+      <figure><img src="out/neckarfront_5.jpg" alt="Neckarfront styled"/><figcaption>The Starry Night</figcaption></figure>
+      <figure><img src="out/neckarfront_3.jpg" alt="Neckarfront styled"/><figcaption>Der Schrei</figcaption></figure>
+      <figure><img src="out/neckarfront_2.jpg" alt="Neckarfront styled"/><figcaption>Femme Nue Assise</figcaption></figure>
+    </div>
+    <div class="img-row four">
+      <figure><img src="out/neckarfront_1.jpg" alt="Neckarfront styled"/><figcaption>Composition VII</figcaption></figure>
+      <figure><img src="out/neckarfront_6.jpg" alt="Neckarfront styled"/><figcaption>Der Kuss</figcaption></figure>
+      <figure><img src="out/neckarfront_7.jpg" alt="Neckarfront styled"/><figcaption>Vincent van Gogh</figcaption></figure>
+    </div>
+
+    <h3>Berkeley Campanile</h3>
+    <p>Sather Tower on UC Berkeley's campus, photographed from the east.</p>
+    <div class="img-row single">
+      <figure><img src="data/content/campanile.jpg" alt="Berkeley Campanile"/></figure>
+    </div>
+    <div class="img-row four">
+      <figure><img src="out/campanile_4.jpg" alt="Campanile styled"/><figcaption>The Shipwreck of the Minotaur</figcaption></figure>
+      <figure><img src="out/campanile_5.jpg" alt="Campanile styled"/><figcaption>The Starry Night</figcaption></figure>
+      <figure><img src="out/campanile_3.jpg" alt="Campanile styled"/><figcaption>Der Schrei</figcaption></figure>
+      <figure><img src="out/campanile_2.jpg" alt="Campanile styled"/><figcaption>Femme Nue Assise</figcaption></figure>
+    </div>
+    <div class="img-row four">
+      <figure><img src="out/campanile_1.jpg" alt="Campanile styled"/><figcaption>Composition VII</figcaption></figure>
+      <figure><img src="out/campanile_6.jpg" alt="Campanile styled"/><figcaption>Der Kuss</figcaption></figure>
+      <figure><img src="out/campanile_7.jpg" alt="Campanile styled"/><figcaption>Vincent van Gogh</figcaption></figure>
+    </div>
+
+    <h3>American Gothic</h3>
+    <p>Grant Wood's iconic 1930 painting, used here as a second-order experiment — a painting styled as a painting.</p>
+    <div class="img-row single">
+      <figure><img src="data/content/american_gothic.jpg" alt="American Gothic"/></figure>
+    </div>
+    <div class="img-row four">
+      <figure><img src="out/american_gothic_4.jpg" alt="American Gothic styled"/><figcaption>The Shipwreck of the Minotaur</figcaption></figure>
+      <figure><img src="out/american_gothic_5.jpg" alt="American Gothic styled"/><figcaption>The Starry Night</figcaption></figure>
+      <figure><img src="out/american_gothic_3.jpg" alt="American Gothic styled"/><figcaption>Der Schrei</figcaption></figure>
+      <figure><img src="out/american_gothic_2.jpg" alt="American Gothic styled"/><figcaption>Femme Nue Assise</figcaption></figure>
+    </div>
+    <div class="img-row four">
+      <figure><img src="out/american_gothic_1.jpg" alt="American Gothic styled"/><figcaption>Composition VII</figcaption></figure>
+      <figure><img src="out/american_gothic_6.jpg" alt="American Gothic styled"/><figcaption>Der Kuss</figcaption></figure>
+      <figure><img src="out/american_gothic_7.jpg" alt="American Gothic styled"/><figcaption>Vincent van Gogh</figcaption></figure>
+    </div>
+
+  </div>
+
+  <footer>
+    <div class="container">
+      <span>martinhodde.com</span>
+      <span class="footer-sep">───── ✦ ─────</span>
+      <span>// hosted from the closet</span>
+    </div>
+  </footer>
+</body>
+</html>
