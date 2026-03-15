@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lightfield Camera · Martin Hodde</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/style.css?v=4">
+  <link rel="stylesheet" href="/css/project.css?v=4">
+  <script>
+    MathJax = {
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script type="text/javascript" id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js">
+  </script>
+  <script src="/js/nav.js" defer></script>
+</head>
+<body>
+
+  <div class="project-content">
+    <a href="/projects/" class="back-link">back to projects</a>
+    <h1>Lightfield Camera</h1>
+
+    <div class="img-row single">
+      <figure>
+        <img src="out/chess_interactive_middle.jpg" alt="">
+      </figure>
+    </div>
+
+    <h2>Overview</h2>
+    <p>
+      The objective of this project is to simulate visual effects that are typically performed with a camera at the
+      time of shooting, but instead as a post-processing operation. To achieve this, we use a collection of data from the
+      <a href="http://lightfield.stanford.edu/lfs.html">Stanford Light Field Archive</a>, whose setup is pictured below,
+      giving us access to the output of numerous cameras over a reguarly spaced grid.
+    </p>
+
+    <div class="img-row three">
+      <figure>
+        <img src="lightfield.jpg" alt="Lightfield Camera">
+        <figcaption>Lighfield Camera Array</figcaption>
+      </figure>
+    </div>
+
+    <h2>Depth Refocusing</h2>
+    <p>
+      Lightfield data is captured from varying positions in the same two-dimensional plane such that subjects closer to the camera array
+      will shift much more drastically between subsequent images than the subjects farther from the sensors. Consequently, if we simply take the
+      average of all images in the array, the farther subjects will stay in focus and the content in the foreground will end up blurred. If we instead
+      compensate by shifting each image proportionally to the distance that the corresponding camera lies from the center camera in the array,
+      the result will be closer objects staying in focus rather than farther ones. The magnitude of these shifts, which we denote as $\alpha,$
+      determines the strength of this effect. Below, we illustrate the progression of 14 evenly spaced $\alpha$ values between -0.4 and 0.6,
+      which produces a refocusing effect at various depths.
+    </p>
+
+    <div class="img-row two" style="align-items:center">
+      <figure>
+        <img src="out/chess_depth_refocus.gif" alt="Chess Depth Refocus">
+        <figcaption>Chess</figcaption>
+      </figure>
+      <figure>
+        <img src="out/bunny_depth_refocus.gif" alt="Bunny Depth Refocus">
+        <figcaption>Bunny</figcaption>
+      </figure>
+    </div>
+
+    <h2>Aperture Adjustment</h2>
+    <p>
+      A single image from one camera in the array can be viewed as a pinhole image with the smallest possible aperture in the context of
+      a lightfield. As the size of the aperture increases, a broader stream of light rays is allowed to pass through, creating a narrower
+      field of view. We can simulate widening the aperture by taking the average of increasingly large, square subarrays of the entire lightfield
+      grid, spreading from the center of the lightfield array. This roughly corresponds to linearly expanding the radius of the aperture. We show
+      the result of broadening the aperture radius from 0 to 8 in integer increments below.
+    </p>
+
+    <div class="img-row two" style="align-items:center">
+      <figure>
+        <img src="out/chess_aperture_adjust.gif" alt="Chess Aperture Adjust">
+        <figcaption>Chess</figcaption>
+      </figure>
+      <figure>
+        <img src="out/bunny_aperture_adjust.gif" alt="Bunny Aperture Adjust">
+        <figcaption>Bunny</figcaption>
+      </figure>
+    </div>
+
+    <h2>Interactive Refocusing</h2>
+    <p>
+      Now, we want to refocus an image dynamically based on user input. Upon displaying the center image in the camera array and detecting
+      a clicked location, the image should interactively refocus at the clicked depth, bringing clarity to all subjects in the photo at that depth
+      while blurring the rest. This entails extracting the vertical pixel component of the clicked point and dividing by the vertical resolution of the
+      photos to obtain an approximate $\alpha$ value. Hence, an $\alpha$ near 0 corresponds to focusing on the background and an $\alpha$ approaching 1
+      results in focusing on the foreground. With this $\alpha$ depth approximation in hand, we can apply the shifting and averaging procedure described
+      in the depth refocusing section, but for only a single frame. The output is shown below on a few different clicked points.
+    </p>
+
+    <div class="img-row three">
+      <figure>
+        <img src="out/chess_interactive_top.jpg" alt="Chess Interactive Refocus Top">
+      </figure>
+      <figure>
+        <img src="out/chess_interactive_middle.jpg" alt="Chess Interactive Refocus Middle">
+      </figure>
+      <figure>
+        <img src="out/chess_interactive_bottom.jpg" alt="Chess Interactive Refocus Bottom">
+      </figure>
+    </div>
+
+  </div>
+
+  <footer>
+    <div class="container">
+      <span>martinhodde.com</span>
+      <span class="footer-sep">───── ✦ ─────</span>
+      <span>// hosted from the closet</span>
+    </div>
+  </footer>
+</body>
+</html>

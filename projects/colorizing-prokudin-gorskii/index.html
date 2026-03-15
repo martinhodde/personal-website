@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Colorizing the Prokudin-Gorskii Photo Collection · Martin Hodde</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/style.css?v=4">
+  <link rel="stylesheet" href="/css/project.css?v=4">
+  <script src="/js/nav.js" defer></script>
+</head>
+<body>
+
+  <div class="project-content">
+    <a href="/projects/" class="back-link">back to projects</a>
+    <h1>Colorizing the Prokudin-Gorskii Photo Collection</h1>
+
+    <div class="img-row single">
+      <figure>
+        <img src="out/emir_colorized_wb_c_ed.jpg" alt="Emir of Bukhara">
+      </figure>
+    </div>
+
+    <h2>Overview</h2>
+    <p>
+      Prior to the Russian Revolution of 1917, Sergei Mikhailovich Prokudin-Gorskii (1863-1944) obtained permission from the Tzar to document his country's
+      history by traveling across the Russian Empire taking thousands of color photographs. Though no way of printing color photos existed at the time,
+      Prokudin-Gorskii believed that this technology would be developed in the future so that he could eventually render the present in color, so long as the
+      appropriate visual information was captured. His idea was to record three exposures of every scene onto a glass plate using a red, green, and blue filter.
+      These RGB glass plate negatives depicting the final years of the Russian Empire survived and were purchased in 1948 by the Library of Congress, which has since
+      digitized them and made them available online. The goal is to process a selection of these digital copies and bring the corresponding color images to life.
+    </p>
+
+    <h2>Approach</h2>
+    <p>
+      Each digital image file includes three color channels arranged vertically, as on the original glass plates. The first step is to divide the image into
+      three equal parts to roughly separate the red, green, and blue channels. Fixing the blue channel, one can align the red channel and the green channel to it.
+      The simplest way to perform this channel alignment is to exhaustively search over a window of potential displacements and score each one according to an
+      appropriate metric, keeping the best diplacement for that channel. In my implementation, I opted to use normalized cross-correlation (NCC) as the alignment
+      metric since it performed well on virtually all of the provided images. This function is simply a dot product between two flattened and normalized image vectors
+      which measures the "similarity" between two channels in terms of their positional pixel intensities. Because artifacts often appear at the edge of each channel
+      due to the way in which the images were preserved, I crop each image by 20 percent of the height or width on each side before running the search algorithm in
+      order to focus solely on the interior components of the image. This way, NCC results are more accurate and informative.
+    </p>
+    <p>
+      This technique worked well on the smaller JPEG inputs, but became too costly for the larger TIFF images. Thus, I implemented an alternative search
+      algorithm based on image pyramids to reduce the search space and expedite execution times. An image pyramid is a sequential representation of an image at
+      multiple scales, which in our case is adjusted by a factor of 2 at each level. The algorithm first involves recursively halving the resolution of the input
+      image channel until it is small enough to allow exhaustive search to run in a reasonable amount of time. Once the coarse displacement is computed at the top
+      of the pyramid, the function descends the pyramid, updating the displacement if needed by performing a search over a finer range on a version of the image
+      with twice the resolution as the previous layer. Ultimately, the algorithm bubbles all the way up the call stack, at which point several layers of progressively
+      finer updates have been applied to the coarse displacement, leaving us with a reasonable estimate in a fraction of the time of exhaustive search.
+    </p>
+    <p>
+      The only remaining step is to shift the red and green color channels by the optimal displacement values found by the search algorithm and then stack the adjusted
+      color channels on top of each other in RGB order to produce a digital color image! In addition, however, I decided to crop every output image by a fixed
+      5 percent of the appropriate dimension on each side to remove some of the visual artifacts that the borders create.
+    </p>
+
+    <h2>Results</h2>
+    <p>
+      Below are the results of applying my base colorization implementation on the provided images. I used a [-15, 15] coarse search window, [-8, 8] fine search
+      window, and 512 pixel threshold as the maximum image height or width for which to apply the coarse search window. These hyperparameters were determined
+      empirically, yielding the best looking aggregate results in my opinion. Beneath each image are the red and green channel displacements that were applied.
+    </p>
+
+    <div class="img-row three">
+      <figure>
+        <img src="out/cathedral_colorized.jpg" alt="Cathedral">
+        <figcaption>Cathedral</figcaption>
+      </figure>
+      <figure>
+        <img src="out/church_colorized.jpg" alt="Church">
+        <figcaption>Church</figcaption>
+      </figure>
+      <figure>
+        <img src="out/emir_colorized.jpg" alt="Emir">
+        <figcaption>Emir</figcaption>
+      </figure>
+    </div>
+    <div class="img-row three">
+      <figure>
+        <img src="out/harvesters_colorized.jpg" alt="Harvesters">
+        <figcaption>Harvesters</figcaption>
+      </figure>
+      <figure>
+        <img src="out/icon_colorized.jpg" alt="Icon">
+        <figcaption>Icon</figcaption>
+      </figure>
+      <figure>
+        <img src="out/lady_colorized.jpg" alt="Lady">
+        <figcaption>Lady</figcaption>
+      </figure>
+    </div>
+    <div class="img-row three">
+      <figure>
+        <img src="out/melons_colorized.jpg" alt="Melons">
+        <figcaption>Melons</figcaption>
+      </figure>
+      <figure>
+        <img src="out/monastery_colorized.jpg" alt="Monastery">
+        <figcaption>Monastery</figcaption>
+      </figure>
+      <figure>
+        <img src="out/onion_church_colorized.jpg" alt="Onion Church">
+        <figcaption>Onion Church</figcaption>
+      </figure>
+    </div>
+    <div class="img-row three">
+      <figure>
+        <img src="out/sculpture_colorized.jpg" alt="Sculpture">
+        <figcaption>Sculpture</figcaption>
+      </figure>
+      <figure>
+        <img src="out/self_portrait_colorized.jpg" alt="Self-Portrait">
+        <figcaption>Self-Portrait</figcaption>
+      </figure>
+      <figure>
+        <img src="out/three_generations_colorized.jpg" alt="Three Generations">
+        <figcaption>Three Generations</figcaption>
+      </figure>
+    </div>
+    <div class="img-row three">
+      <figure>
+        <img src="out/chapel_colorized.jpg" alt="Chapel">
+        <figcaption>Chapel</figcaption>
+      </figure>
+      <figure>
+        <img src="out/excavator_colorized.jpg" alt="Excavator">
+        <figcaption>Excavator</figcaption>
+      </figure>
+      <figure>
+        <img src="out/floodgate_supervisor_colorized.jpg" alt="Floodgate Supervisor">
+        <figcaption>Floodgate Supervisor</figcaption>
+      </figure>
+    </div>
+    <div class="img-row three">
+      <figure>
+        <img src="out/forest_colorized.jpg" alt="Forest">
+        <figcaption>Forest</figcaption>
+      </figure>
+      <figure>
+        <img src="out/models_colorized.jpg" alt="Models">
+        <figcaption>Models</figcaption>
+      </figure>
+      <figure>
+        <img src="out/wooden_church_colorized.jpg" alt="Wooden Church">
+        <figcaption>Wooden Church</figcaption>
+      </figure>
+    </div>
+    <div class="img-row three">
+      <figure>
+        <img src="out/tobolsk_colorized.jpg" alt="Tobolsk">
+        <figcaption>Tobolsk</figcaption>
+      </figure>
+      <figure>
+        <img src="out/train_colorized.jpg" alt="Train">
+        <figcaption>Train</figcaption>
+      </figure>
+    </div>
+
+    <h2>White Balancing</h2>
+    <p>
+      In order to simulate a neutral illuminant, I first need to estimate the given illuminant to counteract it. I decided to operate under the gray-world
+      assumption which speculates that the average color in every scene is gray. Concretely, this means that each color channel is equal in magnitude on average.
+      To adjust the colors with respect to this new basis, I first compute the average pixel intensity across all pixels and channels as the illumination
+      estimate. Then, I broadcast this estimate as a triple and divide it element-wise by the average (R, G, B) value that appears in the image to produce normalization
+      scalars for each color channel. Multiplying each pixel in the image by these coefficients creates a white balancing effect that can be observed in the
+      image comparisons below.
+    </p>
+
+    <div class="img-row two">
+      <figure>
+        <img src="out/church_colorized.jpg" alt="Church with no WB">
+        <figcaption>Church</figcaption>
+      </figure>
+      <figure>
+        <img src="out/church_colorized_wb.jpg" alt="Church with WB">
+        <figcaption>Church with White Balancing</figcaption>
+      </figure>
+    </div>
+    <div class="img-row two">
+      <figure>
+        <img src="out/icon_colorized.jpg" alt="Icon with no WB">
+        <figcaption>Icon</figcaption>
+      </figure>
+      <figure>
+        <img src="out/icon_colorized_wb.jpg" alt="Icon with WB">
+        <figcaption>Icon with White Balancing</figcaption>
+      </figure>
+    </div>
+    <div class="img-row two">
+      <figure>
+        <img src="out/models_colorized.jpg" alt="Models with no WB">
+        <figcaption>Models</figcaption>
+      </figure>
+      <figure>
+        <img src="out/models_colorized_wb.jpg" alt="Models with WB">
+        <figcaption>Models with White Balancing</figcaption>
+      </figure>
+    </div>
+    <div class="img-row two">
+      <figure>
+        <img src="out/sculpture_colorized.jpg" alt="Sculpture with no WB">
+        <figcaption>Sculpture</figcaption>
+      </figure>
+      <figure>
+        <img src="out/sculpture_colorized_wb.jpg" alt="Sculpture with WB">
+        <figcaption>Sculpture with White Balancing</figcaption>
+      </figure>
+    </div>
+
+    <h2>Contrasting</h2>
+    <p>
+      After performing white balancing, I decided to add some contrast to the photos as well. The way to enhance the contrast of an image is to broaden the
+      dynamic range. Histogram equalization accomplishes this by spreading out the most frequent intensity values that appear in an image, therefore leveling
+      out the intensities and flattening the histogram. In my implementation, I used an adaptive histogram equalization function that computes localized intensity
+      histograms for the image rather than a global one. I chose a subtle clipping limit of 0.005 to augment the images without deep frying them. The results of
+      this transformation can be observed in the following image comparisons.
+    </p>
+
+    <div class="img-row two">
+      <figure>
+        <img src="out/lady_colorized_wb.jpg" alt="Lady with WB">
+        <figcaption>Lady with White Balancing</figcaption>
+      </figure>
+      <figure>
+        <img src="out/lady_colorized_wb_c.jpg" alt="Lady with WB/C">
+        <figcaption>Lady with White Balancing and Contrasting</figcaption>
+      </figure>
+    </div>
+    <div class="img-row two">
+      <figure>
+        <img src="out/onion_church_colorized_wb.jpg" alt="Onion Church with WB">
+        <figcaption>Onion Church with White Balancing</figcaption>
+      </figure>
+      <figure>
+        <img src="out/onion_church_colorized_wb_c.jpg" alt="Onion Church with WB/C">
+        <figcaption>Onion Church with White Balancing and Contrasting</figcaption>
+      </figure>
+    </div>
+    <div class="img-row two">
+      <figure>
+        <img src="out/self_portrait_colorized_wb.jpg" alt="Self-Portrait with WB">
+        <figcaption>Self-Portrait with White Balancing</figcaption>
+      </figure>
+      <figure>
+        <img src="out/self_portrait_colorized_wb_c.jpg" alt="Self-Portrait with WB/C">
+        <figcaption>Self-Portrait with White Balancing and Contrasting</figcaption>
+      </figure>
+    </div>
+    <div class="img-row two">
+      <figure>
+        <img src="out/wooden_church_colorized_wb.jpg" alt="Wooden Church with WB">
+        <figcaption>Wooden Church with White Balancing</figcaption>
+      </figure>
+      <figure>
+        <img src="out/wooden_church_colorized_wb_c.jpg" alt="Wooden Church with WB/C">
+        <figcaption>Wooden Church with White Balancing and Contrasting</figcaption>
+      </figure>
+    </div>
+
+    <h2>Edge Detection</h2>
+    <p>
+      In the case of the image of Emir, I was not satisfied with the alignment of the color channels in the base implementation. Because of the vibrant array of colors
+      present in the clothing he is wearing, the intensity values of the three color channels do not appear to match up very well. To remedy this, I decided to apply
+      the Sobel operator to perform edge detection on each color channel, thus featurizing them before the alignment process. Convolving the inputs with this
+      simple filter turned out to be an effective way to line up the color channels. The difference is displayed below.
+    </p>
+
+    <div class="img-row two">
+      <figure>
+        <img src="out/emir_colorized_wb_c.jpg" alt="Emir with WB/C">
+        <figcaption>Emir with White Balancing and Contrasting</figcaption>
+      </figure>
+      <figure>
+        <img src="out/emir_colorized_wb_c_ed.jpg" alt="Emir with WB/C/ED">
+        <figcaption>Emir with White Balancing, Contrasting, and Edge Detection</figcaption>
+      </figure>
+    </div>
+
+  </div>
+
+  <footer>
+    <div class="container">
+      <span>martinhodde.com</span>
+      <span class="footer-sep">───── ✦ ─────</span>
+      <span>// hosted from the closet</span>
+    </div>
+  </footer>
+</body>
+</html>

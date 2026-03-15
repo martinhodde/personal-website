@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auto-Stitching Photo Mosaics · Martin Hodde</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/style.css?v=4">
+  <link rel="stylesheet" href="/css/project.css?v=4">
+  <script>
+    MathJax = {
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script type="text/javascript" id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js">
+  </script>
+  <script src="/js/nav.js" defer></script>
+</head>
+<body>
+
+  <div class="project-content">
+    <a href="/projects/" class="back-link">back to projects</a>
+    <h1>Auto-Stitching Photo Mosaics</h1>
+
+    <div class="img-row single">
+      <figure>
+        <img src="out/houses_mosaic.jpg" alt="">
+      </figure>
+    </div>
+
+    <h2>Overview</h2>
+    <p>
+      In this project, we construct panoramic photo mosaics by stitching together overlapping photographs. We begin by manually selecting point correspondences to recover homographies and warp images into alignment, blending them with a Laplacian stack. We then automate the entire pipeline using Harris corner detection, adaptive non-maximal suppression for spatially uniform feature selection, descriptor matching, and RANSAC for robust homography estimation.
+    </p>
+
+    <h2>Image Warping and Mosaicing - Shooting Pictures</h2>
+    <p>
+      The scenes I chose to shoot for my mosaics for the first part of the project were the interior of Doe Library, the exterior
+      of Doe Library, and an empty street near campus.
+    </p>
+
+    <div class="img-row three">
+      <figure>
+        <img src="data/doe/doe1.jpg" alt="Doe 1">
+      </figure>
+      <figure>
+        <img src="data/doe/doe2.jpg" alt="Doe 2">
+      </figure>
+    </div>
+
+    <div class="img-row three">
+      <figure>
+        <img src="data/doe_outside/doe1.jpg" alt="Doe Outside 1">
+      </figure>
+      <figure>
+        <img src="data/doe_outside/doe2.jpg" alt="Doe Outside 2">
+      </figure>
+    </div>
+
+    <div class="img-row three">
+      <figure>
+        <img src="data/street/street1.jpg" alt="Street 1">
+      </figure>
+      <figure>
+        <img src="data/street/street2.jpg" alt="Street 2">
+      </figure>
+    </div>
+
+    <h2>Recovering Homographies</h2>
+    <p>
+      First, we need to reconstruct the transformation between each pair of images. This transformation is called a homography,
+      of the form $p'=Hp$, where $H$ is a $3 \times 3$ matrix with 8 degrees of freedom. We will recover the homography with a set of
+      $(p',p)$ pairs of corresponding points selected from the two images. Four point correspondences are needed at minimum to produce
+      a solution, but this might yield unstable results, so we instead select extra points and then solve for the least squares
+      parameters of the homography matrix. This setup is illustrated below.
+    </p>
+
+    <div class="img-row wide">
+      <figure>
+        <img src="homography.jpg" alt="Homography Matrix Construction">
+        <figcaption>Homography Matrix</figcaption>
+      </figure>
+    </div>
+
+    <h2>Warping the Images</h2>
+    <p>
+      Input images are warped according to the computed homography matrix as defined in the previous section. Warping with the inverse
+      matrix is used to interpolate color.
+    </p>
+
+    <h2>Image Rectification</h2>
+    <p>
+      To rectify an image, we simply select any seemingly planar surface in an image and warp it such that it appears frontal-parallel.
+      This is achieved by manually defining a desired rectangle in the center of the output image. I selected the following images
+      of mine to rectify.
+    </p>
+
+    <div class="img-row three">
+      <figure>
+        <img src="data/doe.jpg" alt="Doe">
+        <figcaption>Doe Library</figcaption>
+      </figure>
+      <figure>
+        <img src="data/acropolis.jpg" alt="Acropolis">
+        <figcaption>Acropolis</figcaption>
+      </figure>
+      <figure>
+        <img src="data/baseball.jpg" alt="Baseball">
+        <figcaption>Baseball Field</figcaption>
+      </figure>
+    </div>
+    <div class="img-row three">
+      <figure>
+        <img src="out/doe_rect.jpg" alt="Doe Rect">
+      </figure>
+      <figure>
+        <img src="out/acropolis_rect.jpg" alt="Acropolis Rect">
+      </figure>
+      <figure>
+        <img src="out/baseball_rect.jpg" alt="Baseball Rect">
+      </figure>
+    </div>
+
+    <h2>Blending Images into a Mosaic</h2>
+    <p>
+      The left images in a given scene is warped to the right image via perspective transformation, and appropriate image boundaries are
+      computed with respect to the original corners. The overall image boundaries are determined by the total range of all warped corners.
+      Images are placed from left to right onto the output canvas based on the offset between the current image and the output's top-left
+      corner. The Laplacian stack method implemented in the second project is used to blend the overlapping regions. After the images are blended,
+      we apply some manual cropping on the output to eliminate the borders that do not contain any visual data. Below, we see that the
+      images tend to be hastily aligned due to the lack of accurate and comprehensive correspondence points. We have, however, ultimately produced
+      a few reasonable mosaics for this phase which are displayed here.
+    </p>
+
+    <div class="img-row wide">
+      <figure>
+        <img src="out/doe_mosaic.jpg" alt="Doe Interior">
+        <figcaption>Doe Interior</figcaption>
+      </figure>
+    </div>
+    <div class="img-row wide">
+      <figure>
+        <img src="out/doe_outside_mosaic.jpg" alt="Doe Exterior">
+        <figcaption>Doe Exterior</figcaption>
+      </figure>
+    </div>
+    <div class="img-row wide">
+      <figure>
+        <img src="out/street_mosaic.jpg" alt="Street">
+        <figcaption>Street</figcaption>
+      </figure>
+    </div>
+
+    <h2>Feature Matching and Autostitching - Shooting Pictures</h2>
+    <p>
+      For the second part of this project, I took pictures of some colorful houses in San Francisco, the Golden Gate Bridge, and
+      some hills near Lands End lookout.
+    </p>
+
+    <div class="img-row five">
+      <figure>
+        <img src="data/houses/houses1.jpg" alt="Houses 1">
+      </figure>
+      <figure>
+        <img src="data/houses/houses2.jpg" alt="Houses 2">
+      </figure>
+      <figure>
+        <img src="data/houses/houses3.jpg" alt="Houses 3">
+      </figure>
+      <figure>
+        <img src="data/houses/houses4.jpg" alt="Houses 4">
+      </figure>
+      <figure>
+        <img src="data/houses/houses5.jpg" alt="Houses 5">
+      </figure>
+    </div>
+
+    <div class="img-row five">
+      <figure>
+        <img src="data/bridge/bridge1.jpg" alt="Bridge 1">
+      </figure>
+      <figure>
+        <img src="data/bridge/bridge2.jpg" alt="Bridge 2">
+      </figure>
+      <figure>
+        <img src="data/bridge/bridge3.jpg" alt="Bridge 3">
+      </figure>
+      <figure>
+        <img src="data/bridge/bridge4.jpg" alt="Bridge 4">
+      </figure>
+      <figure>
+        <img src="data/bridge/bridge5.jpg" alt="Bridge 5">
+      </figure>
+    </div>
+
+    <div class="img-row three">
+      <figure>
+        <img src="data/hills/hills1.jpg" alt="Hills 1">
+      </figure>
+      <figure>
+        <img src="data/hills/hills2.jpg" alt="Hills 2">
+      </figure>
+      <figure>
+        <img src="data/hills/hills3.jpg" alt="Hills 3">
+      </figure>
+    </div>
+
+    <h2>Harris Detector and Adaptive Non-Maximal Supression</h2>
+    <p>
+      We use the Harris corner detector algorithm to find a broad initial set of potential interest points. This involves
+      computing Gaussian derivatives at each pixel, finding the second moment matrix in a Gaussian window around each pixel, and
+      applying the corner response function. Then, we enforce a threshold to ensure that only sufficiently large corner responses are
+      maintained. Finally, we perform adaptive non-maximal supression to obtain a fixed 500 points per image which are relatively evenly
+      distributed spatially. These top points are determined by their supression radius which is defined by the expression
+    </p>
+
+    <div class="img-row single">
+      <figure style="max-width: 45%;">
+        <img src="anms.jpg" alt="ANMS" style="width: 100%; height: auto; max-height: none;">
+      </figure>
+    </div>
+
+    <p>
+      where $c_{\text{robust}} = 0.9$. The results of the corner detector and subsequent supression are shown below on selected sample
+      images.
+    </p>
+
+    <div class="img-row three">
+      <figure>
+        <img src="data/houses/houses3.jpg" alt="Houses">
+        <figcaption>Houses</figcaption>
+      </figure>
+      <figure>
+        <img src="out/houses_harris.jpg" alt="Houses Harris">
+        <figcaption>Houses Harris Corners</figcaption>
+      </figure>
+      <figure>
+        <img src="out/houses_anms.jpg" alt="Houses ANMS">
+        <figcaption>Houses ANMS Corners</figcaption>
+      </figure>
+    </div>
+    <div class="img-row three">
+      <figure>
+        <img src="data/bridge/bridge3.jpg" alt="Bridge">
+        <figcaption>Golden Gate</figcaption>
+      </figure>
+      <figure>
+        <img src="out/bridge_harris.jpg" alt="Bridge Harris">
+        <figcaption>Golden Gate Harris Corners</figcaption>
+      </figure>
+      <figure>
+        <img src="out/bridge_anms.jpg" alt="Bridge ANMS">
+        <figcaption>Golden Gate ANMS Corners</figcaption>
+      </figure>
+    </div>
+    <div class="img-row three">
+      <figure>
+        <img src="data/hills/hills2.jpg" alt="Hills">
+        <figcaption>Hills</figcaption>
+      </figure>
+      <figure>
+        <img src="out/hills_harris.jpg" alt="Hills Harris">
+        <figcaption>Hills Harris Corners</figcaption>
+      </figure>
+      <figure>
+        <img src="out/hills_anms.jpg" alt="Hills ANMS">
+        <figcaption>Hills ANMS Corners</figcaption>
+      </figure>
+    </div>
+
+    <h2>Feature Descriptor Extraction</h2>
+    <p>
+      For each interest point determined by the output of the adaptive non-maximal supression, we take a $40 \times 40$ window
+      around it, and downsample to a more general $8 \times 8$ patch. This patch is normalized to have zero mean and unit variance,
+      then flattened into a vector, providing us with a feature descriptor for the interest point.
+    </p>
+
+    <h2>Feature Matching</h2>
+    <p>
+      To select correspondences between two sets of feature descriptors, we calculate the first and second nearest neighbors of each feature
+      in one set with respect to all features in the other set according to the sum of squared differences metric. However, we want to
+      ensure that the first nearest neighbor is a significantly better match than the second nearest neighbor. Hence, we only consider a
+      correspondence a proper feature match if the ratio of errors between the first and second nearest neighbors is less than $0.5$ (i.e.
+      the first nearest neighbor is at least twice as good as the second).
+    </p>
+
+    <h2>RANSAC</h2>
+    <p>
+      Random sample consensus (RANSAC) is an iterative parameter estimation algorithm we use to recover the homography matrix. We
+      execute the following procedure for 10,000 iterations with $\epsilon = 1$:
+    </p>
+
+    <div class="img-row single">
+      <figure>
+        <img src="ransac.jpg" alt="Ransac">
+      </figure>
+    </div>
+
+    <h2>Results</h2>
+    <p>
+      Displayed below are the final autostitched mosaic results.
+    </p>
+
+    <div class="img-row wide">
+      <figure>
+        <img src="out/houses_mosaic.jpg" alt="Houses Mosaic">
+        <figcaption>Houses Mosaic</figcaption>
+      </figure>
+    </div>
+    <div class="img-row wide">
+      <figure>
+        <img src="out/bridge_mosaic.jpg" alt="Bridge Mosaic">
+        <figcaption>Golden Gate Mosaic</figcaption>
+      </figure>
+    </div>
+    <div class="img-row wide">
+      <figure>
+        <img src="out/hills_mosaic.jpg" alt="Hills Mosaic">
+        <figcaption>Hills Mosaic</figcaption>
+      </figure>
+    </div>
+
+  </div>
+
+  <footer>
+    <div class="container">
+      <span>martinhodde.com</span>
+      <span class="footer-sep">───── ✦ ─────</span>
+      <span>// hosted from the closet</span>
+    </div>
+  </footer>
+</body>
+</html>

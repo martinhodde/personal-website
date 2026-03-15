@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fun with Filters and Frequencies · Martin Hodde</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/style.css?v=4">
+  <link rel="stylesheet" href="/css/project.css?v=4">
+  <script>
+    MathJax = {
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script type="text/javascript" id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js">
+  </script>
+  <script src="/js/nav.js" defer></script>
+</head>
+<body>
+
+  <div class="project-content">
+    <a href="/projects/" class="back-link">back to projects</a>
+    <h1>Fun with Filters and Frequencies</h1>
+
+    <div class="img-row single">
+      <figure>
+        <img src="out/apple_orange_blend.jpg" alt="Oraple">
+      </figure>
+    </div>
+
+    <h2>Overview</h2>
+    <p>
+      In this project, we explore image processing through frequency analysis. We implement edge detection using finite difference and Derivative of Gaussian filters, sharpen images with unsharp masking, and create hybrid images that appear differently at close and far viewing distances. We then build Gaussian and Laplacian stacks to perform seamless multiresolution blending of images with irregular boundaries.
+    </p>
+
+    <h2>Finite Difference Operator</h2>
+    <p>
+      Let $I$ be the input image. The gradient magnitude edge image is computed by convolving $I$ with the humble finite difference filters
+      $D_x = \begin{bmatrix} 1 &amp; -1 \end{bmatrix}$ and $D_y = \begin{bmatrix} 1 \\ -1 \end{bmatrix}$, then consolidating the resulting vertical and
+      horizontal edges via the gradient magnitude function $\sqrt{(\frac{\partial I}{\partial x})^2 + (\frac{\partial I}{\partial y})^2}$. Finally, we binarize
+      this output by setting all pixels with intensity greater than the empirically determined threshold of $0.2$ to $1$ and all pixels less
+      than or equal to this threshold to $0$. The result of this procedure on the cameraman image is shown below.
+    </p>
+
+    <div class="img-row five">
+      <figure>
+        <img src="data/cameraman.png" alt="Cameraman">
+        <figcaption>Cameraman</figcaption>
+      </figure>
+      <figure>
+        <img src="out/horizontal_edges.jpg" alt="Horizontal Edges">
+        <figcaption>Horizontal Edges</figcaption>
+      </figure>
+      <figure>
+        <img src="out/vertical_edges.jpg" alt="Vertical Edges">
+        <figcaption>Vertical Edges</figcaption>
+      </figure>
+      <figure>
+        <img src="out/gradient_magnitude.jpg" alt="Gradient Magnitude">
+        <figcaption>Gradient Magnitude</figcaption>
+      </figure>
+      <figure>
+        <img src="out/cameraman_grad_edge.jpg" alt="Edge Image">
+        <figcaption>Edge Image</figcaption>
+      </figure>
+    </div>
+
+    <h2>Derivative of Gaussian (DoG) Filter</h2>
+    <p>
+      The output image below is obtained by convolving the input image with a Gaussian filter $G$ to create a blurring effect, then passing the result into the
+      gradient magnitude computation process described above, but with a lower binarization threshold of $0.1$. As expected, this yields an edge detector image
+      with thicker edges and less high-frequency noise, which primarily manifests as scattered white dots.
+    </p>
+
+    <div class="img-row five">
+      <figure>
+        <img src="out/cameraman_blur.jpg" alt="Cameraman Blurred">
+        <figcaption>Cameraman Blurred</figcaption>
+      </figure>
+      <figure>
+        <img src="out/horizontal_edges_blur.jpg" alt="Horizontal Edges">
+        <figcaption>Horizontal Edges</figcaption>
+      </figure>
+      <figure>
+        <img src="out/vertical_edges_blur.jpg" alt="Vertical Edges">
+        <figcaption>Vertical Edges</figcaption>
+      </figure>
+      <figure>
+        <img src="out/gradient_magnitude_blur.jpg" alt="Gradient Magnitude">
+        <figcaption>Gradient Magnitude</figcaption>
+      </figure>
+      <figure>
+        <img src="out/cameraman_grad_edge_blur.jpg" alt="Edge Image">
+        <figcaption>Edge Image</figcaption>
+      </figure>
+    </div>
+
+    <p>
+      Note that the next output image looks exactly the same as the first, but is achieved through combining Derivative of Gaussian filters with respect to $x$
+      and $y$, which are simply convolutions of $G$ with $D_x$ and $D_y$, respectively. By leveraging the commutativity of the convolution operator, we can
+      get the same result with much less computation. Below, we have the two DoG filters along with the identical output image.
+    </p>
+
+    <div class="img-row three">
+      <figure>
+        <img src="out/derivative_gaussian_x.jpg" alt="DoG (x)">
+        <figcaption>DoG Filter (w.r.t. $x$)</figcaption>
+      </figure>
+      <figure>
+        <img src="out/derivative_gaussian_y.jpg" alt="DoG (y)">
+        <figcaption>DoG Filter (w.r.t. $y$)</figcaption>
+      </figure>
+      <figure>
+        <img src="out/cameraman_deriv.jpg" alt="Edge Image">
+        <figcaption>Edge Image</figcaption>
+      </figure>
+    </div>
+
+    <h2>Image Sharpening</h2>
+    <p>
+      To sharpen an image, we first apply a Gaussian blur to the input to isolate the low frequencies. Then, we subtract these low frequencies from the input
+      image, thereby extracting the high-frequency details. Finally, we add these details back to the original image with a multiplier of $\alpha$ to get a
+      sharpened version of the image. These operations are displayed below as discrete steps, but are combined into a single convolution in my implementation.
+    </p>
+
+    <div class="img-row four">
+      <figure>
+        <img src="data/taj.jpg" alt="Taj">
+        <figcaption>Taj Mahal</figcaption>
+      </figure>
+      <figure>
+        <img src="out/taj_blurred.jpg" alt="Taj Blurred">
+        <figcaption>Blurred</figcaption>
+      </figure>
+      <figure>
+        <img src="out/taj_details.jpg" alt="Taj Details">
+        <figcaption>Details</figcaption>
+      </figure>
+      <figure>
+        <img src="out/taj_sharp.jpg" alt="Taj Sharpened">
+        <figcaption>Sharpened ($\alpha = 1$)</figcaption>
+      </figure>
+    </div>
+    <div class="img-row four">
+      <figure>
+        <img src="data/nebula.jpg" alt="Nebula">
+        <figcaption>Nebula</figcaption>
+      </figure>
+      <figure>
+        <img src="out/nebula_blurred.jpg" alt="Nebula Blurred">
+        <figcaption>Blurred</figcaption>
+      </figure>
+      <figure>
+        <img src="out/nebula_details.jpg" alt="Nebula Details">
+        <figcaption>Details</figcaption>
+      </figure>
+      <figure>
+        <img src="out/nebula_sharp.jpg" alt="Nebula Sharpened">
+        <figcaption>Sharpened ($\alpha = 3$)</figcaption>
+      </figure>
+    </div>
+
+    <p>
+      As a sanity check, we take an inherently sharp image, blur it, then sharpen it to see if the result looks reasonably close to the original. Though this
+      is far from a perfect reconstruction, it appears that the sharpening process undid much of the blurring.
+    </p>
+
+    <div class="img-row four">
+      <figure>
+        <img src="data/train_tracks.jpg" alt="Train Tracks">
+        <figcaption>Train Tracks</figcaption>
+      </figure>
+      <figure>
+        <img src="out/train_tracks_blurred.jpg" alt="Train Tracks Blurred">
+        <figcaption>Blurred</figcaption>
+      </figure>
+      <figure>
+        <img src="out/train_tracks_sharp.jpg" alt="Train Tracks Sharpened">
+        <figcaption>Sharpened ($\alpha = 8$)</figcaption>
+      </figure>
+    </div>
+
+    <h2>Hybrid Images</h2>
+    <p>
+      In order to create hybrid image, we take the high frequencies of one image and the low frequencies of another image, then overlay them. From close up,
+      the image chosen as the high-frequency portion is clearly visible, but from far away, the high frequencies disappear and only the low frequencies are
+      observable. As one can see, color often enhances hybrid images and is most prominent in the low-frequency component of the image.
+    </p>
+
+    <div class="img-row four">
+      <figure>
+        <img src="data/derek.jpg" alt="Derek">
+        <figcaption>Derek</figcaption>
+      </figure>
+      <figure>
+        <img src="data/nutmeg.jpg" alt="Nutmeg">
+        <figcaption>Nutmeg</figcaption>
+      </figure>
+      <figure>
+        <img src="out/derek_nutmeg_hybrid.jpg" alt="Derek-Nutmeg Hybrid">
+        <figcaption>Derek-Nutmeg Hybrid</figcaption>
+      </figure>
+      <figure>
+        <img src="out/derek_nutmeg_hybrid_color.jpg" alt="Derek-Nutmeg Hybrid (Color)">
+        <figcaption>Derek-Nutmeg Hybrid (Color)</figcaption>
+      </figure>
+    </div>
+    <div class="img-row four">
+      <figure>
+        <img src="data/van_gogh.jpg" alt="Van Gogh">
+        <figcaption>Vincent</figcaption>
+      </figure>
+      <figure>
+        <img src="data/marilyn.jpg" alt="Marilyn">
+        <figcaption>Marilyn</figcaption>
+      </figure>
+      <figure>
+        <img src="out/van_gogh_marilyn_hybrid.jpg" alt="Van Gogh-Marilyn Hybrid">
+        <figcaption>Vincent-Marilyn Hybrid</figcaption>
+      </figure>
+      <figure>
+        <img src="out/van_gogh_marilyn_hybrid_color.jpg" alt="Van Gogh-Marilyn Hybrid (Color)">
+        <figcaption>Vincent-Marilyn Hybrid (Color)</figcaption>
+      </figure>
+    </div>
+    <div class="img-row four">
+      <figure>
+        <img src="data/elephant.jpg" alt="Elephant">
+        <figcaption>Elephant</figcaption>
+      </figure>
+      <figure>
+        <img src="data/atat.jpg" alt="ATAT">
+        <figcaption>ATAT</figcaption>
+      </figure>
+      <figure>
+        <img src="out/elephant_atat_hybrid.jpg" alt="Elephant-ATAT Hybrid">
+        <figcaption>Elephant-ATAT Hybrid</figcaption>
+      </figure>
+      <figure>
+        <img src="out/elephant_atat_hybrid_color.jpg" alt="Elephant-ATAT Hybrid (Color)">
+        <figcaption>Elephant-ATAT Hybrid (Color)</figcaption>
+      </figure>
+    </div>
+
+    <p>
+      The following hybrid image between the Chicago bean and a monkey did not turn out well because the images are so different in shape and size,
+      to the point where there do not exist any reasonable alignment points needed to create a convincing hybrid effect.
+    </p>
+
+    <div class="img-row four">
+      <figure>
+        <img src="data/bean.jpg" alt="Bean">
+        <figcaption>Bean</figcaption>
+      </figure>
+      <figure>
+        <img src="data/monkey.jpg" alt="Monkey">
+        <figcaption>Monkey</figcaption>
+      </figure>
+      <figure>
+        <img src="out/bean_monkey_hybrid.jpg" alt="Bean-Monkey Hybrid">
+        <figcaption>Bean-Monkey Hybrid</figcaption>
+      </figure>
+      <figure>
+        <img src="out/bean_monkey_hybrid_color.jpg" alt="Bean-Monkey Hybrid (Color)">
+        <figcaption>Bean-Monkey Hybrid (Color)</figcaption>
+      </figure>
+    </div>
+
+    <h2>Spectral Analysis</h2>
+    <p>
+      Here, we show the Fourier transforms of the elephant, the ATAT, the filtered versions of these images, and the resulting hybrid image.
+    </p>
+
+    <div class="img-row five">
+      <figure>
+        <img src="data/elephant.jpg" alt="Elephant Freq">
+        <figcaption>Elephant</figcaption>
+      </figure>
+      <figure>
+        <img src="data/atat.jpg" alt="ATAT Freq">
+        <figcaption>ATAT</figcaption>
+      </figure>
+      <figure>
+        <img src="out/elephant_low.jpg" alt="Elephant Filtered Freq">
+        <figcaption>Elephant (Low Frequencies)</figcaption>
+      </figure>
+      <figure>
+        <img src="out/atat_high.jpg" alt="ATAT Filtered Freq">
+        <figcaption>ATAT (High Frequencies)</figcaption>
+      </figure>
+      <figure>
+        <img src="out/elephant_atat_hybrid.jpg" alt="Elephant-ATAT Freq">
+        <figcaption>Elephant-ATAT Hybrid</figcaption>
+      </figure>
+    </div>
+    <div class="img-row five">
+      <figure>
+        <img src="out/elephant_freq.jpg" alt="Elephant Freq">
+      </figure>
+      <figure>
+        <img src="out/atat_freq.jpg" alt="ATAT Freq">
+      </figure>
+      <figure>
+        <img src="out/elephant_filt_freq.jpg" alt="Elephant Filtered Freq">
+      </figure>
+      <figure>
+        <img src="out/atat_filt_freq.jpg" alt="ATAT Filtered Freq">
+      </figure>
+      <figure>
+        <img src="out/elephant_atat_hybrid_freq.jpg" alt="Elephant-ATAT Freq">
+      </figure>
+    </div>
+
+    <h2>Gaussian and Laplacian Stacks</h2>
+    <p>
+      A Gaussian stack is constructed by successively applying a Gaussian blur to an input image. At each subsequent level of the stack, the Gaussian
+      $\sigma$ increases, creating a coarser image of the same size. The Laplacian stack, on the other hand, is basically a representation of the frequency
+      ranges between each level of the Gaussian stack. The levels of the Laplacian stack are computed by taking the difference between the current level of
+      the Gaussian stack and the next level. Shown below is a visualization of selected levels of the Laplacian stack for the oraple image.
+    </p>
+
+    <div class="img-row three">
+      <figure>
+        <img src="out/apple_stack_0.jpg" alt="Apple 0">
+        <figcaption>Apple Level 0</figcaption>
+      </figure>
+      <figure>
+        <img src="out/orange_stack_0.jpg" alt="Orange 0">
+        <figcaption>Orange Level 0</figcaption>
+      </figure>
+      <figure>
+        <img src="out/apple_orange_stack_0.jpg" alt="Oraple 0">
+        <figcaption>Oraple Level 0</figcaption>
+      </figure>
+    </div>
+    <div class="img-row three">
+      <figure>
+        <img src="out/apple_stack_4.jpg" alt="Apple 4">
+        <figcaption>Apple Level 4</figcaption>
+      </figure>
+      <figure>
+        <img src="out/orange_stack_4.jpg" alt="Orange 4">
+        <figcaption>Orange Level 4</figcaption>
+      </figure>
+      <figure>
+        <img src="out/apple_orange_stack_4.jpg" alt="Oraple 4">
+        <figcaption>Oraple Level 4</figcaption>
+      </figure>
+    </div>
+    <div class="img-row three">
+      <figure>
+        <img src="out/apple_mask.jpg" alt="Apple">
+        <figcaption>Apple</figcaption>
+      </figure>
+      <figure>
+        <img src="out/orange_mask.jpg" alt="Orange">
+        <figcaption>Orange</figcaption>
+      </figure>
+      <figure>
+        <img src="out/apple_orange_blend.jpg" alt="Oraple">
+        <figcaption>Oraple</figcaption>
+      </figure>
+    </div>
+
+    <h2>Multiresolution Blending</h2>
+    <p>
+      Multiresolution blending entails first computing the Laplacian stack of each input image, $LA$ and $LB$. Then, we construct a Gaussian stack $GR$ for the
+      mask which will allow us to create a multigranular feathering effect for each frequency band selected from the image. To form a combined Laplacian stack
+      $LS$ for the blended image, we utilize the levels of $GR$ as weights, applying the following formula: $$LS(i,j) = GR(i,j) \cdot LA(i,j) + (1-GR(i,j)) \cdot LB(i,j)$$
+      Finally, we collapse the $LS$ stack by taking a sum across all levels to obtain the blended image. I found that the most impressive results were obtained by
+      using a more aggressive blurring schedule for the Gaussian stack of the mask compared to the Gaussian stacks of the input images, since this produced wider
+      blending windows even for the high-frequency portions of the images. Below are the Laplacian stacks for my additional selected image blends.
+    </p>
+
+    <div class="img-row three">
+      <figure>
+        <img src="out/pine_tree_stack_0.jpg" alt="Pine Tree 0">
+        <figcaption>Pine Tree Level 0</figcaption>
+      </figure>
+      <figure>
+        <img src="out/snowy_tree_stack_0.jpg" alt="Snowy Tree 0">
+        <figcaption>Snowy Tree Level 0</figcaption>
+      </figure>
+      <figure>
+        <img src="out/pine_tree_snowy_tree_stack_0.jpg" alt="Snow Pine 0">
+        <figcaption>Snow Pine Level 0</figcaption>
+      </figure>
+    </div>
+    <div class="img-row three">
+      <figure>
+        <img src="out/pine_tree_stack_4.jpg" alt="Pine Tree 4">
+        <figcaption>Pine Tree Level 4</figcaption>
+      </figure>
+      <figure>
+        <img src="out/snowy_tree_stack_4.jpg" alt="Snowy Tree 4">
+        <figcaption>Snowy Tree Level 4</figcaption>
+      </figure>
+      <figure>
+        <img src="out/pine_tree_snowy_tree_stack_4.jpg" alt="Snow Pine 4">
+        <figcaption>Snow Pine Level 4</figcaption>
+      </figure>
+    </div>
+    <div class="img-row three">
+      <figure>
+        <img src="out/pine_tree_mask.jpg" alt="Pine Tree">
+        <figcaption>Pine Tree</figcaption>
+      </figure>
+      <figure>
+        <img src="out/snowy_tree_mask.jpg" alt="Snowy Tree">
+        <figcaption>Snowy Tree</figcaption>
+      </figure>
+      <figure>
+        <img src="out/pine_tree_snowy_tree_blend.jpg" alt="Snow Pine">
+        <figcaption>Snow Pine</figcaption>
+      </figure>
+    </div>
+    <div class="img-row three">
+      <figure>
+        <img src="out/balloon_stack_0.jpg" alt="Balloon 0">
+        <figcaption>Balloon Level 0</figcaption>
+      </figure>
+      <figure>
+        <img src="out/golden_gate_stack_0.jpg" alt="Golden Gate 0">
+        <figcaption>Golden Gate Level 0</figcaption>
+      </figure>
+      <figure>
+        <img src="out/balloon_golden_gate_stack_0.jpg" alt="Balloon Gate 0">
+        <figcaption>Balloon Gate Level 0</figcaption>
+      </figure>
+    </div>
+    <div class="img-row three">
+      <figure>
+        <img src="out/balloon_stack_4.jpg" alt="Balloon 4">
+        <figcaption>Balloon Level 4</figcaption>
+      </figure>
+      <figure>
+        <img src="out/golden_gate_stack_4.jpg" alt="Golden Gate 4">
+        <figcaption>Golden Gate Level 4</figcaption>
+      </figure>
+      <figure>
+        <img src="out/balloon_golden_gate_stack_4.jpg" alt="Balloon Gate 4">
+        <figcaption>Balloon Gate Level 4</figcaption>
+      </figure>
+    </div>
+    <div class="img-row three">
+      <figure>
+        <img src="out/balloon_mask.jpg" alt="Balloon">
+        <figcaption>Balloon</figcaption>
+      </figure>
+      <figure>
+        <img src="out/golden_gate_mask.jpg" alt="Golden Gate">
+        <figcaption>Golden Gate</figcaption>
+      </figure>
+      <figure>
+        <img src="out/balloon_golden_gate_blend.jpg" alt="Balloon Gate">
+        <figcaption>Balloon Gate</figcaption>
+      </figure>
+    </div>
+
+    <h2>Results</h2>
+    <p>
+      Displayed here are the input images along with their respective blended results.
+    </p>
+
+    <div class="img-row three">
+      <figure>
+        <img src="data/apple.jpg" alt="Apple">
+        <figcaption>Apple</figcaption>
+      </figure>
+      <figure>
+        <img src="data/orange.jpg" alt="Orange">
+        <figcaption>Orange</figcaption>
+      </figure>
+      <figure>
+        <img src="out/apple_orange_blend.jpg" alt="Oraple">
+        <figcaption>Oraple</figcaption>
+      </figure>
+    </div>
+    <div class="img-row three">
+      <figure>
+        <img src="data/balloon.jpg" alt="Balloon">
+        <figcaption>Balloon</figcaption>
+      </figure>
+      <figure>
+        <img src="data/golden_gate.jpg" alt="Golden Gate">
+        <figcaption>Golden Gate</figcaption>
+      </figure>
+      <figure>
+        <img src="out/balloon_golden_gate_blend.jpg" alt="Balloon Gate">
+        <figcaption>Balloon Gate</figcaption>
+      </figure>
+    </div>
+    <div class="img-row three">
+      <figure>
+        <img src="data/pine_tree.jpg" alt="Pine Tree">
+        <figcaption>Pine Tree</figcaption>
+      </figure>
+      <figure>
+        <img src="data/snowy_tree.jpg" alt="Snowy Tree">
+        <figcaption>Snowy Tree</figcaption>
+      </figure>
+      <figure>
+        <img src="out/pine_tree_snowy_tree_blend.jpg" alt="Snow Pine">
+        <figcaption>Snow Pine</figcaption>
+      </figure>
+    </div>
+
+  </div>
+
+  <footer>
+    <div class="container">
+      <span>martinhodde.com</span>
+      <span class="footer-sep">───── ✦ ─────</span>
+      <span>// hosted from the closet</span>
+    </div>
+  </footer>
+</body>
+</html>
