@@ -139,11 +139,14 @@
     const grid = document.getElementById('photo-grid');
     const shuffled = [];
     photos.forEach(([n, w, h], i) => {
+      const id = String(n).padStart(3,'0');
       const img = document.createElement('img');
-      img.src = `/photos/img/${String(n).padStart(3,'0')}.jpg`;
+      img.src = `/photos/thumbs/${id}.webp`;
+      img.dataset.full = `/photos/img/${id}.jpg`;
       img.width = w;
       img.height = h;
       img.loading = 'eager';
+      img.decoding = 'async';
       img.dataset.idx = i;
       grid.appendChild(img);
       shuffled.push(img);
@@ -156,7 +159,7 @@
 
     function open(i) {
       current = i;
-      lbImg.src = shuffled[i].src;
+      lbImg.src = shuffled[i].dataset.full;
       lightbox.classList.add('open');
       document.body.style.overflow = 'hidden';
     }
