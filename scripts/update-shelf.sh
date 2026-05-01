@@ -205,7 +205,8 @@ if lb_favs_raw:
         if match:
             old_list = match.group(2).strip()
             if old_list != lb_li:
-                html = html[:match.start(2)] + '\n' + lb_li + '\n          ' + html[match.end(2):]
+                new_block = match.group(1).rstrip() + '\n' + lb_li + '\n          ' + match.group(3)
+                html = html[:match.start()] + new_block + html[match.end():]
                 changed = True
 
 # Update Letterboxd count
@@ -226,7 +227,8 @@ if bg_favs_raw:
         if match:
             old_list = match.group(2).strip()
             if old_list != bg_li:
-                html = html[:match.start(2)] + '\n' + bg_li + '\n          ' + html[match.end(2):]
+                new_block = match.group(1).rstrip() + '\n' + bg_li + '\n          ' + match.group(3)
+                html = html[:match.start()] + new_block + html[match.end():]
                 changed = True
 
 # Update Backloggd played count
@@ -255,7 +257,8 @@ if gr_favorites_raw:
         if match:
             old_list = match.group(2).strip()
             if old_list != gr_li:
-                html = html[:match.start(2)] + '\n' + gr_li + '\n          ' + html[match.end(2):]
+                new_block = match.group(1).rstrip() + '\n' + gr_li + '\n          ' + match.group(3)
+                html = html[:match.start()] + new_block + html[match.end():]
                 changed = True
 
 # Update Goodreads read count
@@ -284,7 +287,8 @@ if sp_artists_raw:
         if match:
             old_list = match.group(2).strip()
             if old_list != sp_li:
-                html = html[:match.start(2)] + '\n' + sp_li + '\n          ' + html[match.end(2):]
+                new_block = match.group(1).rstrip() + '\n' + sp_li + '\n          ' + match.group(3)
+                html = html[:match.start()] + new_block + html[match.end():]
                 changed = True
 
 if changed:
