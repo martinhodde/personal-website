@@ -11,8 +11,8 @@
   <meta property="og:title" content="Martin Hodde">
   <meta property="og:description" content="Software engineer's personal site — projects, photos, and homelab.">
   <meta property="og:image" content="https://martinhodde.com/og-image.png">
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="630">
+  <meta property="og:image:width" content="618">
+  <meta property="og:image:height" content="618">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="stylesheet" href="/css/style.css?v=4">
   <style>
@@ -46,155 +46,8 @@
       </div>
     </div>
 
-    <script>
-    (function(){
-      const phrases = [
-        'broom closet datacenter operator',
-        'media backlog curator',
-        'part-time ski bum',
-        'dog treat dispenser',
-        'home game poker shark',
-        'fair-weather cyclist',
-      ];
-      const el = document.getElementById('rotating-title');
-      let phraseIdx = 0, charIdx = 0, deleting = false;
-
-      function tick() {
-        const phrase = phrases[phraseIdx];
-        if (!deleting) {
-          el.textContent = phrase.slice(0, ++charIdx);
-          if (charIdx === phrase.length) {
-            deleting = true;
-            setTimeout(tick, 2200);
-            return;
-          }
-          setTimeout(tick, 55);
-        } else {
-          el.textContent = phrase.slice(0, --charIdx);
-          if (charIdx === 0) {
-            deleting = false;
-            phraseIdx = (phraseIdx + 1) % phrases.length;
-            setTimeout(tick, 400);
-            return;
-          }
-          setTimeout(tick, 28);
-        }
-      }
-      setTimeout(tick, 900);
-    })();
-    </script>
-
-    <script>
-    (function(){
-      const SCALE=80, DEPTH=5;
-      const chars=' .,:;=~+*#%@';
-      let W=140, H=38;
-
-      function rotXY(v,a,b){
-        const ca=Math.cos(a),sa=Math.sin(a),cb=Math.cos(b),sb=Math.sin(b);
-        let[x,y,z]=v;
-        const y2=y*ca-z*sa, z2=y*sa+z*ca;
-        return[x*cb-z2*sb, y2, x*sb+z2*cb];
-      }
-      function proj(v){
-        const s=SCALE/(v[2]+DEPTH);
-        return[v[0]*s+W/2, v[1]*s*0.55+H/2, v[2]];
-      }
-
-      function drawEdges(buf,zbuf,edges,a,b){
-        for(const[v0,v1]of edges){
-          const p0=proj(rotXY(v0,a,b)), p1=proj(rotXY(v1,a,b));
-          const steps=Math.max(Math.abs(p1[0]-p0[0]),Math.abs(p1[1]-p0[1]))*1.5;
-          for(let s=0;s<=steps;s++){
-            const t=s/steps;
-            const x=Math.round(p0[0]+(p1[0]-p0[0])*t);
-            const y=Math.round(p0[1]+(p1[1]-p0[1])*t);
-            const z=p0[2]+(p1[2]-p0[2])*t;
-            if(x>=0&&x<W&&y>=0&&y<H&&z<zbuf[y][x]){
-              zbuf[y][x]=z;
-              const bright=Math.max(0,Math.min(chars.length-1,
-                Math.floor((1-(z+2)/4)*(chars.length-1))));
-              buf[y][x]=chars[bright];
-            }
-          }
-        }
-      }
-
-      // Icosphere (subdivided twice)
-      const phi=(1+Math.sqrt(5))/2, sc=0.9;
-      const base=[
-        [-1,phi,0],[1,phi,0],[-1,-phi,0],[1,-phi,0],
-        [0,-1,phi],[0,1,phi],[0,-1,-phi],[0,1,-phi],
-        [phi,0,-1],[phi,0,1],[-phi,0,-1],[-phi,0,1]
-      ].map(v=>{const l=Math.sqrt(v[0]**2+v[1]**2+v[2]**2);return v.map(c=>c/l*sc*2);});
-
-      let faces=[
-        [0,11,5],[0,5,1],[0,1,7],[0,7,10],[0,10,11],
-        [1,5,9],[5,11,4],[11,10,2],[10,7,6],[7,1,8],
-        [3,9,4],[3,4,2],[3,2,6],[3,6,8],[3,8,9],
-        [4,9,5],[2,4,11],[6,2,10],[8,6,7],[9,8,1]
-      ];
-
-      for(let sub=0;sub<1;sub++){
-        const midCache={};
-        function midpoint(a,b){
-          const key=Math.min(a,b)+':'+Math.max(a,b);
-          if(midCache[key]!==undefined)return midCache[key];
-          const m=base[a].map((v,i)=>(v+base[b][i])/2);
-          const l=Math.sqrt(m[0]**2+m[1]**2+m[2]**2);
-          base.push(m.map(c=>c/l*sc*2));
-          midCache[key]=base.length-1;
-          return base.length-1;
-        }
-        const newFaces=[];
-        for(const[a,b,c]of faces){
-          const ab=midpoint(a,b),bc=midpoint(b,c),ca=midpoint(c,a);
-          newFaces.push([a,ab,ca],[b,bc,ab],[c,ca,bc],[ab,bc,ca]);
-        }
-        faces=newFaces;
-      }
-
-      const edgeSet=new Set();
-      const edges=[];
-      for(const[a,b,c]of faces){
-        for(const[i,j]of[[a,b],[b,c],[c,a]]){
-          const key=Math.min(i,j)+':'+Math.max(i,j);
-          if(!edgeSet.has(key)){edgeSet.add(key);edges.push([base[i],base[j]]);}
-        }
-      }
-
-      const el=document.getElementById('icosphere');
-
-      function measureChar(){
-        const probe=document.createElement('span');
-        probe.textContent='M'.repeat(20);
-        probe.style.cssText='position:absolute;visibility:hidden;white-space:pre;font:inherit;';
-        el.appendChild(probe);
-        const r=probe.getBoundingClientRect();
-        el.removeChild(probe);
-        return {cw:r.width/20, ch:r.height};
-      }
-      function resize(){
-        const {cw,ch}=measureChar();
-        const containerW=el.clientWidth;
-        const containerH=el.clientHeight||320;
-        W=Math.max(40,Math.floor(containerW/cw));
-        H=Math.max(20,Math.floor(containerH/ch));
-      }
-      resize();
-      window.addEventListener('resize',resize);
-
-      function frame(t){
-        const a=t*0.0006, b=t*0.0008;
-        const buf=Array.from({length:H},()=>Array(W).fill(' '));
-        const zbuf=Array.from({length:H},()=>Array(W).fill(1e9));
-        drawEdges(buf,zbuf,edges,a,b);
-        el.textContent=buf.map(r=>r.join('')).join('\n');
-        requestAnimationFrame(frame);
-      }
-      requestAnimationFrame(frame);
-    })();
-    </script>
+    <script src="/js/rotating-title.js"></script>
+    <script src="/js/icosphere.js"></script>
 
     <section class="site-dir">
       <div class="dir-grid">
