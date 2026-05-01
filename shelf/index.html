@@ -25,7 +25,10 @@
       transition: border-color 0.2s, background 0.2s;
       text-decoration: none;
       color: inherit;
-      display: block;
+      display: grid;
+      grid-row: span 3;
+      grid-template-rows: subgrid;
+      row-gap: 1rem;
     }
     .shelf-card:hover {
       border-color: var(--accent-dim);
@@ -36,13 +39,17 @@
       display: flex;
       align-items: center;
       gap: 0.75rem;
-      margin-bottom: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border);
     }
     .shelf-card-header .platform-icon {
       font-size: 1.4rem;
       width: 2rem;
       text-align: center;
       flex-shrink: 0;
+    }
+    .shelf-card-title {
+      flex: 1;
     }
     .shelf-card-header h3 {
       font-family: var(--mono);
@@ -59,12 +66,9 @@
     .shelf-stats {
       display: flex;
       gap: 1.5rem;
-      margin-bottom: 1rem;
-      padding-bottom: 0.75rem;
-      border-bottom: 1px solid var(--border);
     }
     .shelf-stat {
-      text-align: center;
+      text-align: right;
     }
     .shelf-stat .num {
       font-family: var(--mono);
@@ -108,8 +112,8 @@
       font-family: var(--mono);
       font-size: 0.7rem;
       color: var(--accent);
-      margin-top: 1rem;
       display: block;
+      align-self: end;
     }
     .shelf-card .visit::after {
       content: ' →';
@@ -122,7 +126,7 @@
   <main class="container">
     <div class="page-header">
       <h1>shelf</h1>
-      <p>Movies, games, and more coming soon.</p>
+      <p>Movies, games, books, and music.</p>
     </div>
 
     <div class="shelf-grid">
@@ -130,22 +134,28 @@
       <a href="https://letterboxd.com/krazyklownn/" class="shelf-card" target="_blank" rel="noopener">
         <div class="shelf-card-header">
           <span class="platform-icon">🎬</span>
-          <div>
+          <div class="shelf-card-title">
             <h3>Letterboxd</h3>
             <span class="username">@krazyklownn</span>
           </div>
-        </div>
-        <div class="shelf-stats">
-          <div class="shelf-stat">
-            <span class="num">251</span>
-            <span class="label">films</span>
+          <div class="shelf-stats">
+            <div class="shelf-stat">
+              <span class="num">253</span>
+              <span class="label">films</span>
+            </div>
           </div>
         </div>
         <div class="shelf-favorites">
-          <h4>current favorites</h4>
+          <h4>favorites</h4>
           <ul>
 
 
+            
+            
+            
+            
+            
+            
             
             
             
@@ -161,26 +171,32 @@
       <a href="https://backloggd.com/u/krazyklown/" class="shelf-card" target="_blank" rel="noopener">
         <div class="shelf-card-header">
           <span class="platform-icon">🎮</span>
-          <div>
+          <div class="shelf-card-title">
             <h3>Backloggd</h3>
             <span class="username">@krazyklown</span>
           </div>
-        </div>
-        <div class="shelf-stats">
-          <div class="shelf-stat">
-            <span class="num">163</span>
-            <span class="label">played</span>
-          </div>
-          <div class="shelf-stat">
-            <span class="num">167</span>
-            <span class="label">backlog</span>
+          <div class="shelf-stats">
+            <div class="shelf-stat">
+              <span class="num">163</span>
+              <span class="label">played</span>
+            </div>
+            <div class="shelf-stat">
+              <span class="num">167</span>
+              <span class="label">backlog</span>
+            </div>
           </div>
         </div>
         <div class="shelf-favorites">
-          <h4>current favorites</h4>
+          <h4>favorites</h4>
           <ul>
 
 
+
+
+
+            
+            
+            
             
             
             
@@ -189,6 +205,67 @@
             <li>Hollow Knight</li>
             <li>The Witcher 3: Wild Hunt</li>
             <li>Resident Evil 4</li>
+          </ul>
+        </div>
+        <span class="visit">view profile</span>
+      </a>
+
+      <a href="https://www.goodreads.com/user/show/200749596-martin-hodde" class="shelf-card" target="_blank" rel="noopener">
+        <div class="shelf-card-header">
+          <span class="platform-icon">📚</span>
+          <div class="shelf-card-title">
+            <h3>Goodreads</h3>
+            <span class="username">@martin-hodde</span>
+          </div>
+          <div class="shelf-stats">
+            <div class="shelf-stat">
+              <span class="num">86</span>
+              <span class="label">read</span>
+            </div>
+            <div class="shelf-stat">
+              <span class="num">11</span>
+              <span class="label">to read</span>
+            </div>
+          </div>
+        </div>
+        <div class="shelf-favorites">
+          <h4>favorites</h4>
+          <ul>
+            
+            
+            
+            <li>Fahrenheit 451</li>
+            <li>Heart of Darkness</li>
+            <li>Jane Eyre</li>
+            <li>Animal Farm</li>
+            <li>The Sun Also Rises</li>
+          </ul>
+        </div>
+        <span class="visit">view profile</span>
+      </a>
+
+      <a href="https://open.spotify.com/user/mahodde" class="shelf-card" target="_blank" rel="noopener">
+        <div class="shelf-card-header">
+          <span class="platform-icon">🎵</span>
+          <div class="shelf-card-title">
+            <h3>Spotify</h3>
+            <span class="username">@mahodde</span>
+          </div>
+        </div>
+        <div class="shelf-favorites">
+          <h4>top artists · this month</h4>
+          <ul>
+            
+            
+            
+            
+            
+            
+            <li>Earl Sweatshirt</li>
+            <li>Freddie Gibbs</li>
+            <li>MIKE</li>
+            <li>J. Cole</li>
+            <li>Denzel Curry</li>
           </ul>
         </div>
         <span class="visit">view profile</span>

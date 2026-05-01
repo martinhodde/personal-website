@@ -215,7 +215,7 @@ items(FIL_CX,NET_TOP-0.24-0.44,NET_LIST)
 ax.set_ylim(MAIN_Y-0.15, INET_Y+INET_H+0.20)
 ax.axis('off')
 plt.tight_layout(pad=0)
-plt.savefig('/home/mhodde/martinhodde.com/homelab/architecture.png',
+plt.savefig('/home/mhodde/personal-website/homelab/architecture.png',
             dpi=150,bbox_inches='tight',facecolor='#1a1b26')
 print(f"Done. COL_TOP={COL_TOP:.2f} MED_OUTER_Y={MED_OUTER_Y:.2f}")
 print(f"  COL2_BOT={COL2_BOT:.2f} COL3_BOT={COL3_BOT:.2f} COL4_BOT={COL4_BOT:.2f}")

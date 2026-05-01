@@ -4,7 +4,7 @@
 
 set -euo pipefail
 
-SHELF="/home/mhodde/martinhodde.com/shelf/index.html"
+SHELF="/home/mhodde/personal-website/shelf/index.html"
 LOG="/tmp/update-shelf.log"
 
 log() { echo "$(date '+%Y-%m-%d %H:%M:%S') $*" >> "$LOG"; }
@@ -96,8 +96,87 @@ if 'id=\"profile-stats\"' in data:
 " 2>/dev/null) || true
 fi
 
+# ── Goodreads ──
+GR_HTML=$(curl -sf \
+  -A "Mozilla/5.0 (X11; Linux x86_64; rv:120.0) Gecko/20100101 Firefox/120.0" \
+  "https://www.goodreads.com/user/show/200749596-martin-hodde" 2>/dev/null) || GR_HTML=""
+
+GR_FAVORITES=""
+GR_READ=""
+GR_TOREAD=""
+
+GR_RSS=$(curl -sf "https://www.goodreads.com/review/list_rss/200749596?shelf=favorites" 2>/dev/null) || GR_RSS=""
+if [ -n "$GR_RSS" ]; then
+  GR_FAVORITES=$(echo "$GR_RSS" | python3 -c "
+import sys, re, html as htmlmod
+data = sys.stdin.read()
+# Extract only item titles (inside <item> blocks)
+items = re.findall(r'<item>.*?</item>', data, re.DOTALL)
+for item in items:
+    m = re.search(r'<title>([^<]+)</title>', item)
+    if m:
+        print(htmlmod.unescape(m.group(1).strip()))
+" 2>/dev/null) || true
+fi
+
+if [ -n "$GR_HTML" ]; then
+  GR_READ=$(echo "$GR_HTML" | python3 -c "
+import sys, re
+data = sys.stdin.read()
+m = re.search(r'(?<![a-z-])read&lrm;[^(]*\((\d+)\)', data)
+if m: print(m.group(1))
+" 2>/dev/null) || true
+
+  GR_TOREAD=$(echo "$GR_HTML" | python3 -c "
+import sys, re
+data = sys.stdin.read()
+m = re.search(r'to-read&lrm;[^(]*\((\d+)\)', data)
+if m: print(m.group(1))
+" 2>/dev/null) || true
+fi
+
+# ── Spotify top artists ──
+SPOTIFY_CREDS="${HOME}/.spotify_credentials"
+SP_ARTISTS=""
+
+if [ -f "$SPOTIFY_CREDS" ]; then
+  # shellcheck source=/dev/null
+  source "$SPOTIFY_CREDS"
+
+  TOKEN_RESPONSE=$(curl -sf -X POST "https://accounts.spotify.com/api/token" \
+    -H "Content-Type: application/x-www-form-urlencoded" \
+    -d "grant_type=refresh_token&refresh_token=${SPOTIFY_REFRESH_TOKEN}&client_id=${SPOTIFY_CLIENT_ID}&client_secret=${SPOTIFY_CLIENT_SECRET}" \
+    2>/dev/null) || TOKEN_RESPONSE=""
+
+  if [ -n "$TOKEN_RESPONSE" ]; then
+    ACCESS_TOKEN=$(echo "$TOKEN_RESPONSE" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+print(d.get('access_token', ''))
+" 2>/dev/null) || ACCESS_TOKEN=""
+
+    if [ -n "$ACCESS_TOKEN" ]; then
+      SP_RESPONSE=$(curl -sf \
+        -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+        "https://api.spotify.com/v1/me/top/artists?time_range=short_term&limit=5" \
+        2>/dev/null) || SP_RESPONSE=""
+
+      if [ -n "$SP_RESPONSE" ]; then
+        SP_ARTISTS=$(echo "$SP_RESPONSE" | python3 -c "
+import sys, json
+data = json.load(sys.stdin)
+for item in data.get('items', []):
+    print(item['name'])
+" 2>/dev/null) || SP_ARTISTS=""
+      fi
+    fi
+  fi
+else
+  log "Spotify credentials not found at ${SPOTIFY_CREDS}, skipping"
+fi
+
 # ── Apply updates via Python ──
-python3 - "$SHELF" "$LB_FAVS" "$LB_COUNT" "$BG_FAVS" "$BG_PLAYED" "$BG_BACKLOG" << 'PYEOF'
+python3 - "$SHELF" "$LB_FAVS" "$LB_COUNT" "$BG_FAVS" "$BG_PLAYED" "$BG_BACKLOG" "$SP_ARTISTS" "$GR_FAVORITES" "$GR_READ" "$GR_TOREAD" << 'PYEOF'
 import sys, re
 
 shelf_path = sys.argv[1]
@@ -106,6 +185,10 @@ lb_count = sys.argv[3].strip()
 bg_favs_raw = sys.argv[4].strip()
 bg_played = sys.argv[5].strip()
 bg_backlog = sys.argv[6].strip()
+sp_artists_raw = sys.argv[7].strip()
+gr_favorites_raw = sys.argv[8].strip()
+gr_read = sys.argv[9].strip()
+gr_toread = sys.argv[10].strip()
 
 with open(shelf_path) as f:
     html = f.read()
@@ -117,7 +200,7 @@ if lb_favs_raw:
     lb_favs = [f for f in lb_favs_raw.split('\n') if f.strip()]
     if len(lb_favs) >= 2:  # sanity: need at least 2 favorites
         lb_li = '\n'.join(f'            <li>{f}</li>' for f in lb_favs)
-        pattern = r'(Letterboxd.*?<h4>current favorites</h4>\s*<ul>\s*)(.*?)(</ul>)'
+        pattern = r'(Letterboxd.*?<h4>favorites</h4>\s*<ul>\s*)(.*?)(</ul>)'
         match = re.search(pattern, html, re.DOTALL)
         if match:
             old_list = match.group(2).strip()
@@ -138,7 +221,7 @@ if bg_favs_raw:
     bg_favs = [f for f in bg_favs_raw.split('\n') if f.strip()]
     if len(bg_favs) >= 2:
         bg_li = '\n'.join(f'            <li>{f}</li>' for f in bg_favs)
-        pattern = r'(Backloggd.*?<h4>current favorites</h4>\s*<ul>\s*)(.*?)(</ul>)'
+        pattern = r'(Backloggd.*?<h4>favorites</h4>\s*<ul>\s*)(.*?)(</ul>)'
         match = re.search(pattern, html, re.DOTALL)
         if match:
             old_list = match.group(2).strip()
@@ -161,6 +244,48 @@ if bg_backlog and bg_backlog.isdigit() and int(bg_backlog) > 0:
     if new_html != html:
         html = new_html
         changed = True
+
+# Update Goodreads favorites
+if gr_favorites_raw:
+    gr_books = [b for b in gr_favorites_raw.split('\n') if b.strip()]
+    if len(gr_books) >= 1:
+        gr_li = '\n'.join(f'            <li>{b}</li>' for b in gr_books)
+        pattern = r'(Goodreads.*?<h4>favorites</h4>\s*<ul>\s*)(.*?)(</ul>)'
+        match = re.search(pattern, html, re.DOTALL)
+        if match:
+            old_list = match.group(2).strip()
+            if old_list != gr_li:
+                html = html[:match.start(2)] + '\n' + gr_li + '\n          ' + html[match.end(2):]
+                changed = True
+
+# Update Goodreads read count
+if gr_read and gr_read.isdigit() and int(gr_read) > 0:
+    pattern = r'(Goodreads.*?<span class="num">)\d+(</span>\s*<span class="label">read)'
+    new_html = re.sub(pattern, rf'\g<1>{gr_read}\g<2>', html, flags=re.DOTALL)
+    if new_html != html:
+        html = new_html
+        changed = True
+
+# Update Goodreads to-read count
+if gr_toread and gr_toread.isdigit() and int(gr_toread) >= 0:
+    pattern = r'(Goodreads.*?<span class="num">)\d+(</span>\s*<span class="label">to read)'
+    new_html = re.sub(pattern, rf'\g<1>{gr_toread}\g<2>', html, flags=re.DOTALL)
+    if new_html != html:
+        html = new_html
+        changed = True
+
+# Update Spotify top artists
+if sp_artists_raw:
+    sp_artists = [a for a in sp_artists_raw.split('\n') if a.strip()]
+    if len(sp_artists) >= 3:
+        sp_li = '\n'.join(f'            <li>{a}</li>' for a in sp_artists)
+        pattern = r'(Spotify.*?<h4>top artists.*?</h4>\s*<ul>\s*)(.*?)(</ul>)'
+        match = re.search(pattern, html, re.DOTALL)
+        if match:
+            old_list = match.group(2).strip()
+            if old_list != sp_li:
+                html = html[:match.start(2)] + '\n' + sp_li + '\n          ' + html[match.end(2):]
+                changed = True
 
 if changed:
     with open(shelf_path, 'w') as f:
