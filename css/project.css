@@ -1,24 +1,32 @@
 /* ── Project Page Styles (extends style.css) ── */
 
-/* ── Back link ── */
-.back-link {
-  display: inline-block;
+/* ── Header row (back link + source link) ── */
+.project-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.back-link,
+.source-link {
   font-family: var(--mono);
   font-size: 0.8rem;
   color: var(--text-dim);
   text-decoration: none;
-  margin-bottom: 1rem;
   transition: color 0.2s;
 }
 
 .back-link::before { content: '← '; }
-.back-link:hover { color: var(--accent); }
+.source-link::after { content: ' →'; }
+.back-link:hover,
+.source-link:hover { color: var(--accent); }
 
 /* ── Project article ── */
 .project-content {
   max-width: var(--max-w);
   margin: 0 auto;
-  padding: 0 1.5rem 3rem;
+  padding: 1.25rem 1.5rem 3rem;
 }
 
 .project-content h1 {
