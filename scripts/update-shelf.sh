@@ -113,9 +113,10 @@ data = sys.stdin.read()
 # Extract only item titles (inside <item> blocks)
 items = re.findall(r'<item>.*?</item>', data, re.DOTALL)
 for item in items:
-    m = re.search(r'<title>([^<]+)</title>', item)
+    m = re.search(r'<title><!\[CDATA\[(.*?)\]\]></title>', item) or re.search(r'<title>([^<]+)</title>', item)
     if m:
-        print(htmlmod.unescape(m.group(1).strip()))
+        title = re.sub(r'\s*\([^)]+\)\s*$', '', htmlmod.unescape(m.group(1).strip()))
+        print(title)
 " 2>/dev/null) || true
 fi
 
